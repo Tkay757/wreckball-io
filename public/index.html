@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WreckBall.io — Swing. Smash. Grow.</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- ═══ ULTRA-CLEAN LANDING OVERLAY (LIVE ARENA IN BACKGROUND) ═══ -->
+  <div id="lobbyOverlay" class="overlay active">
+    <div class="lobby-card">
+      <div class="logo-wrap">
+        <h1 class="game-logo">
+          <span class="logo-wreck">WRECK</span><span class="logo-ball">BALL</span><span class="logo-io">.io</span>
+        </h1>
+        <p class="tagline">SWING THE BALL &bull; SMASH CORES &bull; GROW HUGE</p>
+      </div>
+
+      <!-- Skin Strip (Zero Clutter) -->
+      <div class="skin-picker" id="skinPicker" aria-label="Choose Wrecking Ball Skin"></div>
+      <div class="skin-label" id="skinNameLabel">IRON SPIKER</div>
+
+      <!-- Name + Play -->
+      <div class="play-row">
+        <input id="nicknameInput" type="text" maxlength="14" placeholder="Nickname" value="Wrecker" autocomplete="off" spellcheck="false">
+        <button id="playBtn" class="play-btn" type="button">PLAY</button>
+      </div>
+
+      <!-- 1-Line Controls -->
+      <div class="controls-strip">
+        <span><b>MOVE</b> Mouse</span>
+        <span class="dot">&bull;</span>
+        <span><b>SPIN</b> ⟲ LMB / ⟳ RMB</span>
+        <span class="dot">&bull;</span>
+        <span><b>DASH</b> Space</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ IN-GAME HUD ═══ -->
+  <div id="hud" class="hud hidden">
+    <!-- Top Left: Quick Kills + Mute -->
+    <div class="hud-top-left">
+      <div class="stat-pill kills-pill">
+        <span class="pill-label">SMASHES</span>
+        <span id="hudKills" class="pill-val">0</span>
+      </div>
+      <button id="muteBtn" class="icon-btn" type="button" title="Toggle Sound">🔊</button>
+    </div>
+
+    <!-- Top Center: Big Score + Killfeed -->
+    <div class="hud-top-center">
+      <div class="score-big" id="hudScore">0</div>
+      <div class="mass-sub" id="hudBallSize">BALL SIZE: 1.0x</div>
+      <div id="killFeed" class="kill-feed"></div>
+    </div>
+
+    <!-- Top Right: Clean Leaderboard -->
+    <div class="leaderboard">
+      <div class="lb-title">TOP WRECKERS</div>
+      <ol id="leaderboardList" class="lb-list"></ol>
+    </div>
+
+    <!-- Bottom Left: Minimap -->
+    <div class="minimap-wrap">
+      <canvas id="minimapCanvas" width="136" height="136"></canvas>
+    </div>
+
+    <!-- Bottom Center: Spin Indicators + Dodge Dash Bar -->
+    <div class="boost-hud">
+      <div class="spin-pills">
+        <span id="spinCcwPill" class="spin-pill">⟲ LMB</span>
+        <span class="dash-mid-label">DASH [SPACE]</span>
+        <span id="spinCwPill" class="spin-pill">RMB ⟳</span>
+      </div>
+      <div class="boost-track">
+        <div id="boostFill" class="boost-fill"></div>
+      </div>
+    </div>
+
+    <!-- Mobile Touch Controls (Shown on Touch Devices) -->
+    <div id="mobileControls" class="mobile-controls hidden">
+      <div class="mobile-spin-row">
+        <button id="mobileCcwBtn" class="mobile-spin-btn" type="button">⟲</button>
+        <button id="mobileCwBtn" class="mobile-spin-btn" type="button">⟳</button>
+      </div>
+      <button id="mobileBoostBtn" class="mobile-boost-btn" type="button">DASH</button>
+    </div>
+  </div>
+
+  <!-- ═══ GAME OVER OVERLAY ═══ -->
+  <div id="deathOverlay" class="overlay hidden">
+    <div class="death-card">
+      <div class="death-kicker" id="deathReason">SMASHED BY IRONKING</div>
+      <h2 class="death-title">WRECKED!</h2>
+
+      <div class="death-stats">
+        <div class="d-stat">
+          <span class="d-label">SCORE</span>
+          <span class="d-val gold" id="deathScore">0</span>
+        </div>
+        <div class="d-stat">
+          <span class="d-label">SMASHES</span>
+          <span class="d-val red" id="deathKills">0</span>
+        </div>
+        <div class="d-stat">
+          <span class="d-label">PEAK BALL</span>
+          <span class="d-val cyan" id="deathPeak">1.0x</span>
+        </div>
+      </div>
+
+      <div class="death-actions">
+        <button id="respawnBtn" class="play-btn respawn-btn" type="button">PLAY AGAIN</button>
+        <button id="backLobbyBtn" class="secondary-btn" type="button">SKINS</button>
+      </div>
+      <div class="respawn-hint">Press SPACE or ENTER for instant rematch</div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
