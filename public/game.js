@@ -26,6 +26,19 @@
   const muteBtn = document.getElementById('muteBtn');
   const fsBtn = document.getElementById('fsBtn');
   const lobbyFsBtn = document.getElementById('lobbyFsBtn');
+
+  // Skribbl-style elements
+  const skinRarityLabel = document.getElementById('skinRarityLabel');
+  const prevSkinBtn = document.getElementById('prevSkinBtn');
+  const nextSkinBtn = document.getElementById('nextSkinBtn');
+  const avatarCanvas = document.getElementById('avatarCanvas');
+  const randomNickBtn = document.getElementById('randomNickBtn');
+  const privateRoomBtn = document.getElementById('privateRoomBtn');
+  const skribblToast = document.getElementById('skribblToast');
+  const topMuteBtn = document.getElementById('topMuteBtn');
+  const topFsBtn = document.getElementById('topFsBtn');
+  const topShareBtn = document.getElementById('topShareBtn');
+
   const mobileControls = document.getElementById('mobileControls');
   const mobileBoostBtn = document.getElementById('mobileBoostBtn');
   const mobileCcwBtn = document.getElementById('mobileCcwBtn');
@@ -56,6 +69,8 @@
       id: 'iron',
       name: 'IRON SPIKER',
       style: 'spiked',
+      rarity: 'STARTER ⚙️',
+      glowColor: 'rgba(56, 189, 248, 0.35)',
       coreColor: '#38bdf8',
       coreDark: '#0369a1',
       ballColor: '#64748b',
@@ -69,6 +84,8 @@
       id: 'magma',
       name: 'MAGMA METEOR',
       style: 'magma',
+      rarity: 'EPIC 🔥',
+      glowColor: 'rgba(249, 115, 22, 0.55)',
       coreColor: '#fb923c',
       coreDark: '#9a3412',
       ballColor: '#dc2626',
@@ -82,6 +99,8 @@
       id: 'saw',
       name: 'CYBER SAW',
       style: 'saw',
+      rarity: 'RARE ⚡',
+      glowColor: 'rgba(34, 211, 238, 0.55)',
       coreColor: '#22d3ee',
       coreDark: '#155e75',
       ballColor: '#0f172a',
@@ -95,6 +114,8 @@
       id: 'gold',
       name: 'GOLDEN CROWN',
       style: 'crown',
+      rarity: 'LEGENDARY 👑',
+      glowColor: 'rgba(250, 204, 21, 0.65)',
       coreColor: '#facc15',
       coreDark: '#a16207',
       ballColor: '#eab308',
@@ -108,6 +129,8 @@
       id: 'plasma',
       name: 'PLASMA VOID',
       style: 'plasma',
+      rarity: 'MYTHIC 🔮',
+      glowColor: 'rgba(232, 121, 249, 0.6)',
       coreColor: '#e879f9',
       coreDark: '#701a75',
       ballColor: '#6b21a8',
@@ -121,6 +144,8 @@
       id: 'toxic',
       name: 'TOXIC FLAIL',
       style: 'spiked',
+      rarity: 'BIO ☣️',
+      glowColor: 'rgba(74, 222, 128, 0.55)',
       coreColor: '#4ade80',
       coreDark: '#166534',
       ballColor: '#16a34a',
@@ -1681,8 +1706,19 @@
     }
   }
 
-  // ═══ SKIN PICKER UI ═══
+  // ═══ SKIN PICKER & AVATAR PREVIEW (SKRIBBL STYLE) ═══
+  function selectSkin(idx) {
+    selectedSkinIdx = idx;
+    const skin = SKINS[selectedSkinIdx];
+    if (skinNameLabel) skinNameLabel.textContent = skin.name;
+    if (skinRarityLabel) skinRarityLabel.textContent = skin.rarity || 'RARE ⚡';
+    document.querySelectorAll('.skin-dot').forEach((el, i) => {
+      el.classList.toggle('selected', i === idx);
+    });
+  }
+
   function buildSkinPicker() {
+    if (!skinPicker) return;
     skinPicker.innerHTML = '';
     SKINS.forEach((skin, idx) => {
       const btn = document.createElement('button');
@@ -1691,23 +1727,70 @@
       btn.title = skin.name;
 
       const c = document.createElement('canvas');
-      c.width = 64;
-      c.height = 64;
+      c.width = 40;
+      c.height = 40;
       const sctx = c.getContext('2d');
-      drawBallSprite(sctx, 32, 32, 18, 0.35, skin, false);
+      drawBallSprite(sctx, 20, 20, 11, 0.35, skin, false);
       btn.appendChild(c);
 
       btn.addEventListener('click', () => {
-        selectedSkinIdx = idx;
-        skinNameLabel.textContent = skin.name;
-        document.querySelectorAll('.skin-dot').forEach((el, i) => {
-          el.classList.toggle('selected', i === idx);
-        });
+        selectSkin(idx);
       });
 
       skinPicker.appendChild(btn);
     });
-    skinNameLabel.textContent = SKINS[selectedSkinIdx].name;
+    selectSkin(selectedSkinIdx);
+  }
+
+  let avatarAngle = 0;
+  function renderAvatarPreview() {
+    if (!avatarCanvas || mode !== 'lobby') return;
+    const actx = avatarCanvas.getContext('2d');
+    actx.clearRect(0, 0, 130, 130);
+
+    const skin = SKINS[selectedSkinIdx];
+    avatarAngle += 0.035;
+    const cx = 65;
+    const cy = 65;
+    const orbitR = 38;
+    const bx = cx + Math.cos(avatarAngle) * orbitR;
+    const by = cy + Math.sin(avatarAngle) * orbitR;
+
+    // Outer ambient glow
+    const grad = actx.createRadialGradient(cx, cy, 10, cx, cy, 60);
+    grad.addColorStop(0, skin.glowColor || 'rgba(251, 146, 60, 0.35)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    actx.fillStyle = grad;
+    actx.beginPath();
+    actx.arc(cx, cy, 60, 0, Math.PI * 2);
+    actx.fill();
+
+    // Steel chain link
+    actx.strokeStyle = skin.chainColor || '#94a3b8';
+    actx.lineWidth = 3.5;
+    actx.lineCap = 'round';
+    actx.beginPath();
+    actx.moveTo(cx, cy);
+    actx.lineTo(bx, by);
+    actx.stroke();
+
+    // Player core
+    actx.fillStyle = skin.coreColor || '#38bdf8';
+    actx.beginPath();
+    actx.arc(cx, cy, 13, 0, Math.PI * 2);
+    actx.fill();
+    actx.strokeStyle = '#ffffff';
+    actx.lineWidth = 2.5;
+    actx.stroke();
+
+    // Core center eye
+    actx.fillStyle = '#0f172a';
+    actx.beginPath();
+    actx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+    actx.fill();
+
+    // Wrecking Ball with Spikes
+    drawBallSprite(actx, bx, by, 16, avatarAngle * 2.2, skin, false);
   }
 
   // ═══ INPUT LISTENERS ═══
@@ -1854,15 +1937,83 @@
     mode = 'lobby';
     deathOverlay.classList.add('hidden');
     lobbyOverlay.classList.remove('hidden');
+    selectSkin(selectedSkinIdx);
   });
 
   muteBtn.addEventListener('click', () => {
     sfx.muted = !sfx.muted;
     muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+    if (topMuteBtn) topMuteBtn.textContent = sfx.muted ? '🔇' : '🔊';
   });
 
   if (fsBtn) fsBtn.addEventListener('click', toggleGameFullscreen);
   if (lobbyFsBtn) lobbyFsBtn.addEventListener('click', toggleGameFullscreen);
+
+  // ═══ SKRIBBL LOBBY CONTROLS ═══
+  if (prevSkinBtn) {
+    prevSkinBtn.addEventListener('click', () => {
+      selectSkin((selectedSkinIdx - 1 + SKINS.length) % SKINS.length);
+    });
+  }
+  if (nextSkinBtn) {
+    nextSkinBtn.addEventListener('click', () => {
+      selectSkin((selectedSkinIdx + 1) % SKINS.length);
+    });
+  }
+
+  const COOL_NAMES = [
+    'Wrecker', 'ApexCrusher', 'IronSpiker', 'VortexKing', 'ChainBreaker',
+    'DoomOrbit', 'TitanFlail', 'SpikeGod', 'CoreBreaker', 'HyperClaw',
+    'NovaWhip', 'StormCore', 'PulseStriker', 'ShadowWrecker', 'BioHazard',
+    'OmegaSmasher', 'SteelViper', 'OrbitReaper', 'CyberWrecker', 'Goliath'
+  ];
+  if (randomNickBtn) {
+    randomNickBtn.addEventListener('click', () => {
+      const rnd = COOL_NAMES[Math.floor(Math.random() * COOL_NAMES.length)];
+      nicknameInput.value = rnd;
+      nicknameInput.focus();
+    });
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    if (!skribblToast) return;
+    skribblToast.textContent = msg;
+    skribblToast.classList.remove('hidden');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      skribblToast.classList.add('hidden');
+    }, 3200);
+  }
+
+  if (privateRoomBtn) {
+    privateRoomBtn.addEventListener('click', () => {
+      const room = Math.random().toString(36).substring(2, 7).toUpperCase();
+      const link = `${window.location.origin}/wreckball?room=${room}`;
+      navigator.clipboard.writeText(link).catch(() => {});
+      showToast(`✓ Private Arena #${room} invite copied! Share with friends.`);
+      setTimeout(() => {
+        startGame();
+      }, 1000);
+    });
+  }
+
+  if (topMuteBtn) {
+    topMuteBtn.addEventListener('click', () => {
+      sfx.muted = !sfx.muted;
+      topMuteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+      muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+    });
+  }
+  if (topFsBtn) {
+    topFsBtn.addEventListener('click', toggleGameFullscreen);
+  }
+  if (topShareBtn) {
+    topShareBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(window.location.origin + '/wreckball').catch(() => {});
+      showToast('✓ WreckBall.io Arena link copied!');
+    });
+  }
 
   // ═══ BOOT & LOOP ═══
   buildSkinPicker();
@@ -1876,6 +2027,7 @@
     update(dt);
     drawBackground();
     drawMinimap();
+    renderAvatarPreview();
 
     requestAnimationFrame(loop);
   }

@@ -4,52 +4,185 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>WreckBall.io — Swing. Smash. Grow.</title>
-  <link rel="stylesheet" href="style.css">
+  <base href="/wreckball/">
+  <link rel="stylesheet" href="/wreckball/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
 
-  <!-- ═══ ULTRA-CLEAN LANDING OVERLAY (LIVE ARENA IN BACKGROUND) ═══ -->
+  <!-- ═══ SKRIBBL.IO-STYLE LOBBY OVERLAY (CRATETOOLS THEME) ═══ -->
   <div id="lobbyOverlay" class="overlay active">
-    <div class="lobby-card">
-      <div class="lobby-badge-row">
-        <a href="https://cratetools.me" target="_blank" rel="noopener noreferrer" class="crate-brand-badge" title="Visit CrateTools.me">⚡ A CrateTools.me Original</a>
-        <button id="lobbyFsBtn" class="lobby-fs-btn" type="button" title="Toggle Fullscreen">⛶ Fullscreen</button>
+    <!-- Top Bar -->
+    <header class="skribbl-topbar">
+      <a href="https://cratetools.me" class="skribbl-back-link" title="Return to CrateTools Home">
+        <span class="skribbl-back-arrow">←</span>
+        <span class="skribbl-brand-text">CrateTools.me</span>
+      </a>
+      <div class="skribbl-top-badge">
+        <span class="badge-dot"></span>
+        <span>WreckBall.io Arena &bull; Live &bull; Free</span>
       </div>
-      <div class="logo-wrap">
-        <h1 class="game-logo">
-          <span class="logo-wreck">WRECK</span><span class="logo-ball">BALL</span><span class="logo-io">.io</span>
-        </h1>
-        <p class="tagline">SWING THE BALL &bull; SMASH CORES &bull; GROW HUGE</p>
+      <div class="skribbl-top-actions">
+        <button id="topMuteBtn" class="skribbl-icon-btn" type="button" title="Toggle Sound">🔊</button>
+        <button id="topFsBtn" class="skribbl-icon-btn" type="button" title="Toggle Fullscreen">⛶</button>
+        <button id="topShareBtn" class="skribbl-icon-btn" type="button" title="Share Game Link">🔗</button>
       </div>
+    </header>
 
-      <!-- Skin Strip (Zero Clutter) -->
-      <div class="skin-picker" id="skinPicker" aria-label="Choose Wrecking Ball Skin"></div>
-      <div class="skin-label" id="skinNameLabel">IRON SPIKER</div>
+    <!-- Main Skribbl.io 3-Panel Layout -->
+    <div class="skribbl-container">
+      <!-- LEFT PANEL: How to Play -->
+      <aside class="skribbl-card skribbl-side-card left-card">
+        <div class="card-header">
+          <span class="card-icon">🕹️</span>
+          <h3>HOW TO PLAY</h3>
+        </div>
+        <div class="skribbl-steps">
+          <div class="step-item">
+            <span class="step-num">1</span>
+            <div class="step-info">
+              <h4>Steer Your Core</h4>
+              <p>Mouse or touch steers. Your vehicle core is vulnerable—dodge rival flails!</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">2</span>
+            <div class="step-info">
+              <h4>Motorized Whip</h4>
+              <p>Hold <b>⟲ LMB</b> or <b>⟳ RMB</b>. Reverse mid-spin for lethal snap whips!</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">3</span>
+            <div class="step-info">
+              <h4>Dodge Dash</h4>
+              <p>Tap <b>[SPACE]</b> for an evasive dash. Near-misses grant boost energy!</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">4</span>
+            <div class="step-info">
+              <h4>Grow to 4.3x</h4>
+              <p>Smashed enemy cores drop mass shards. Swell your ball to boss size!</p>
+            </div>
+          </div>
+        </div>
+      </aside>
 
-      <!-- Name + Play -->
-      <div class="play-row">
-        <input id="nicknameInput" type="text" maxlength="14" placeholder="Nickname" value="Wrecker" autocomplete="off" spellcheck="false">
-        <button id="playBtn" class="play-btn" type="button">PLAY</button>
-      </div>
+      <!-- CENTER PANEL: Signature Skribbl.io Hero Card -->
+      <main class="skribbl-card skribbl-main-card">
+        <!-- Logo -->
+        <div class="logo-wrap">
+          <h1 class="game-logo">
+            <span class="logo-wreck">WRECK</span><span class="logo-ball">BALL</span><span class="logo-io">.io</span>
+          </h1>
+          <p class="tagline">SWING &bull; SMASH &bull; GROW</p>
+        </div>
 
-      <!-- 1-Line Controls -->
-      <div class="controls-strip">
-        <span><b>MOVE</b> Mouse</span>
-        <span class="dot">&bull;</span>
-        <span><b>SPIN</b> ⟲ LMB / ⟳ RMB</span>
-        <span class="dot">&bull;</span>
-        <span><b>DASH</b> Space</span>
-      </div>
+        <!-- Skribbl Avatar Customizer with < and > Arrows -->
+        <div class="avatar-customizer">
+          <button id="prevSkinBtn" class="avatar-nav-btn" type="button" aria-label="Previous Skin">‹</button>
+          <div class="avatar-preview-wrap">
+            <canvas id="avatarCanvas" width="130" height="130"></canvas>
+          </div>
+          <button id="nextSkinBtn" class="avatar-nav-btn" type="button" aria-label="Next Skin">›</button>
+        </div>
+
+        <!-- Skin Name & Rarity -->
+        <div class="skin-meta">
+          <span class="skin-name" id="skinNameLabel">IRON SPIKER</span>
+          <span class="skin-rarity" id="skinRarityLabel">STARTER ⚙️</span>
+        </div>
+
+        <!-- Quick Skin Dots Strip -->
+        <div class="skin-picker" id="skinPicker" aria-label="Choose Wrecking Ball Skin"></div>
+
+        <!-- Nickname Input + Random Dice Button -->
+        <div class="nickname-row">
+          <input id="nicknameInput" type="text" maxlength="14" placeholder="Enter your nickname..." value="Wrecker" autocomplete="off" spellcheck="false">
+          <button id="randomNickBtn" class="random-btn" type="button" title="Randomize Nickname">🎲</button>
+        </div>
+
+        <!-- Primary Action: Huge Green Skribbl-Style PLAY! Button -->
+        <button id="playBtn" class="skribbl-play-btn" type="button">
+          <span class="play-icon">▶</span>
+          <span>PLAY!</span>
+        </button>
+
+        <!-- Secondary Action: Create Private Room -->
+        <button id="privateRoomBtn" class="skribbl-private-btn" type="button">
+          <span>🎮</span>
+          <span>Create Private Arena</span>
+        </button>
+
+        <!-- 1-Line Controls Footer -->
+        <div class="controls-strip">
+          <span><b>MOVE</b> Mouse</span>
+          <span class="dot">&bull;</span>
+          <span><b>SPIN</b> ⟲ LMB / ⟳ RMB</span>
+          <span class="dot">&bull;</span>
+          <span><b>DASH</b> Space</span>
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL: Leaderboard & Stats -->
+      <aside class="skribbl-card skribbl-side-card right-card">
+        <div class="card-header">
+          <span class="card-icon">🏆</span>
+          <h3>ARENA RANKS</h3>
+        </div>
+        <div class="skribbl-ranks">
+          <div class="rank-item rank-1">
+            <span class="rank-badge">🥇 1</span>
+            <span class="rank-name">ApexCrusher</span>
+            <span class="rank-score">18,450</span>
+          </div>
+          <div class="rank-item rank-2">
+            <span class="rank-badge">🥈 2</span>
+            <span class="rank-name">VortexKing</span>
+            <span class="rank-score">14,920</span>
+          </div>
+          <div class="rank-item rank-3">
+            <span class="rank-badge">🥉 3</span>
+            <span class="rank-name">ChainReaper</span>
+            <span class="rank-score">12,300</span>
+          </div>
+          <div class="rank-item">
+            <span class="rank-badge">4</span>
+            <span class="rank-name">TitanClaw</span>
+            <span class="rank-score">9,840</span>
+          </div>
+          <div class="rank-item">
+            <span class="rank-badge">5</span>
+            <span class="rank-name">NanoSmasher</span>
+            <span class="rank-score">8,200</span>
+          </div>
+        </div>
+
+        <div class="arena-live-status">
+          <div class="live-dot-row">
+            <span class="pulse-dot"></span>
+            <span class="live-text">20 AI Bots Hunting</span>
+          </div>
+          <div class="arena-perks">
+            <span>⚡ 60 FPS Physics</span>
+            <span>&bull;</span>
+            <span>🛡️ 100% Private</span>
+          </div>
+        </div>
+      </aside>
     </div>
+
+    <!-- Toast Notification -->
+    <div id="skribblToast" class="skribbl-toast hidden">✓ Private Arena link copied! Share with friends.</div>
   </div>
 
   <!-- ═══ IN-GAME HUD ═══ -->
   <div id="hud" class="hud hidden">
-    <!-- Top Left: Quick Kills + Mute -->
+    <!-- Top Left: Quick Kills + Mute + Fullscreen -->
     <div class="hud-top-left">
       <div class="stat-pill kills-pill">
         <span class="pill-label">SMASHES</span>
@@ -122,12 +255,12 @@
 
       <div class="death-actions">
         <button id="respawnBtn" class="play-btn respawn-btn" type="button">PLAY AGAIN</button>
-        <button id="backLobbyBtn" class="secondary-btn" type="button">SKINS</button>
+        <button id="backLobbyBtn" class="secondary-btn" type="button">LOBBY</button>
       </div>
       <div class="respawn-hint">Press SPACE or ENTER for instant rematch</div>
     </div>
   </div>
 
-  <script src="game.js"></script>
+  <script src="/wreckball/game.js"></script>
 </body>
 </html>
