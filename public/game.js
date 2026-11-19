@@ -1817,6 +1817,9 @@
     e.preventDefault();
     input.spinCcw = false;
   }, { passive: false });
+  mobileCcwBtn.addEventListener('touchcancel', () => {
+    input.spinCcw = false;
+  });
 
   mobileCwBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
@@ -1827,6 +1830,9 @@
     e.preventDefault();
     input.spinCw = false;
   }, { passive: false });
+  mobileCwBtn.addEventListener('touchcancel', () => {
+    input.spinCw = false;
+  });
 
   mobileBoostBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
@@ -1837,6 +1843,9 @@
     e.preventDefault();
     input.boosting = false;
   }, { passive: false });
+  mobileBoostBtn.addEventListener('touchcancel', () => {
+    input.boosting = false;
+  });
 
   // Buttons
   playBtn.addEventListener('click', startGame);
