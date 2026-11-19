@@ -15,7 +15,10 @@
   <!-- ═══ ULTRA-CLEAN LANDING OVERLAY (LIVE ARENA IN BACKGROUND) ═══ -->
   <div id="lobbyOverlay" class="overlay active">
     <div class="lobby-card">
-      <a href="https://cratetools.me" target="_blank" rel="noopener noreferrer" class="crate-brand-badge" title="Visit CrateTools.me">⚡ A CrateTools.me Original</a>
+      <div class="lobby-badge-row">
+        <a href="https://cratetools.me" target="_blank" rel="noopener noreferrer" class="crate-brand-badge" title="Visit CrateTools.me">⚡ A CrateTools.me Original</a>
+        <button id="lobbyFsBtn" class="lobby-fs-btn" type="button" title="Toggle Fullscreen">⛶ Fullscreen</button>
+      </div>
       <div class="logo-wrap">
         <h1 class="game-logo">
           <span class="logo-wreck">WRECK</span><span class="logo-ball">BALL</span><span class="logo-io">.io</span>
@@ -53,6 +56,7 @@
         <span id="hudKills" class="pill-val">0</span>
       </div>
       <button id="muteBtn" class="icon-btn" type="button" title="Toggle Sound">🔊</button>
+      <button id="fsBtn" class="icon-btn" type="button" title="Toggle Fullscreen">⛶</button>
     </div>
 
     <!-- Top Center: Big Score + Killfeed -->

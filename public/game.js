@@ -24,6 +24,8 @@
   const respawnBtn = document.getElementById('respawnBtn');
   const backLobbyBtn = document.getElementById('backLobbyBtn');
   const muteBtn = document.getElementById('muteBtn');
+  const fsBtn = document.getElementById('fsBtn');
+  const lobbyFsBtn = document.getElementById('lobbyFsBtn');
   const mobileControls = document.getElementById('mobileControls');
   const mobileBoostBtn = document.getElementById('mobileBoostBtn');
   const mobileCcwBtn = document.getElementById('mobileCcwBtn');
@@ -1039,9 +1041,53 @@
     }
   }
 
+  // ═══ FULLSCREEN HELPERS ═══
+  function requestGameFullscreen() {
+    const el = document.documentElement;
+    try {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (el.requestFullscreen) {
+          el.requestFullscreen().catch(() => {});
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        } else if (el.msRequestFullscreen) {
+          el.msRequestFullscreen();
+        }
+      }
+    } catch (_) {}
+  }
+
+  function toggleGameFullscreen() {
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      } else {
+        requestGameFullscreen();
+      }
+    } catch (_) {}
+  }
+
+  function updateFullscreenButtons() {
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (fsBtn) fsBtn.textContent = isFs ? '⛶' : '⛶';
+    if (lobbyFsBtn) lobbyFsBtn.textContent = isFs ? '✓ Fullscreen' : '⛶ Fullscreen';
+  }
+
+  document.addEventListener('fullscreenchange', updateFullscreenButtons);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButtons);
+
+  // Auto-request fullscreen on first click or tap anywhere
+  const triggerAutoFullscreen = () => {
+    requestGameFullscreen();
+  };
+  window.addEventListener('pointerdown', triggerAutoFullscreen, { once: true });
+  window.addEventListener('keydown', triggerAutoFullscreen, { once: true });
+
   // ═══ GAME FLOW ═══
   function startGame() {
     sfx.init();
+    requestGameFullscreen();
     const rawName = (nicknameInput.value || '').trim().slice(0, 14) || 'Wrecker';
     const skin = SKINS[selectedSkinIdx];
 
@@ -1805,6 +1851,9 @@
     sfx.muted = !sfx.muted;
     muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
   });
+
+  if (fsBtn) fsBtn.addEventListener('click', toggleGameFullscreen);
+  if (lobbyFsBtn) lobbyFsBtn.addEventListener('click', toggleGameFullscreen);
 
   // ═══ BOOT & LOOP ═══
   buildSkinPicker();
