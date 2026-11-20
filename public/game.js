@@ -26,19 +26,6 @@
   const muteBtn = document.getElementById('muteBtn');
   const fsBtn = document.getElementById('fsBtn');
   const lobbyFsBtn = document.getElementById('lobbyFsBtn');
-
-  // Skribbl-style elements
-  const skinRarityLabel = document.getElementById('skinRarityLabel');
-  const prevSkinBtn = document.getElementById('prevSkinBtn');
-  const nextSkinBtn = document.getElementById('nextSkinBtn');
-  const avatarCanvas = document.getElementById('avatarCanvas');
-  const randomNickBtn = document.getElementById('randomNickBtn');
-  const privateRoomBtn = document.getElementById('privateRoomBtn');
-  const skribblToast = document.getElementById('skribblToast');
-  const topMuteBtn = document.getElementById('topMuteBtn');
-  const topFsBtn = document.getElementById('topFsBtn');
-  const topShareBtn = document.getElementById('topShareBtn');
-
   const mobileControls = document.getElementById('mobileControls');
   const mobileBoostBtn = document.getElementById('mobileBoostBtn');
   const mobileCcwBtn = document.getElementById('mobileCcwBtn');
@@ -49,6 +36,12 @@
   const hudScore = document.getElementById('hudScore');
   const hudBallSize = document.getElementById('hudBallSize');
   const hudKills = document.getElementById('hudKills');
+  const hudShieldText = document.getElementById('hudShieldText');
+  const hudShieldPill = document.getElementById('hudShieldPill');
+  const chainFill = document.getElementById('chainFill');
+  const chainVal = document.getElementById('chainVal');
+  const mobileChainShortBtn = document.getElementById('mobileChainShortBtn');
+  const mobileChainLongBtn = document.getElementById('mobileChainLongBtn');
   const leaderboardList = document.getElementById('leaderboardList');
   const boostFill = document.getElementById('boostFill');
   const killFeed = document.getElementById('killFeed');
@@ -69,8 +62,6 @@
       id: 'iron',
       name: 'IRON SPIKER',
       style: 'spiked',
-      rarity: 'STARTER ⚙️',
-      glowColor: 'rgba(56, 189, 248, 0.35)',
       coreColor: '#38bdf8',
       coreDark: '#0369a1',
       ballColor: '#64748b',
@@ -84,8 +75,6 @@
       id: 'magma',
       name: 'MAGMA METEOR',
       style: 'magma',
-      rarity: 'EPIC 🔥',
-      glowColor: 'rgba(249, 115, 22, 0.55)',
       coreColor: '#fb923c',
       coreDark: '#9a3412',
       ballColor: '#dc2626',
@@ -99,8 +88,6 @@
       id: 'saw',
       name: 'CYBER SAW',
       style: 'saw',
-      rarity: 'RARE ⚡',
-      glowColor: 'rgba(34, 211, 238, 0.55)',
       coreColor: '#22d3ee',
       coreDark: '#155e75',
       ballColor: '#0f172a',
@@ -114,8 +101,6 @@
       id: 'gold',
       name: 'GOLDEN CROWN',
       style: 'crown',
-      rarity: 'LEGENDARY 👑',
-      glowColor: 'rgba(250, 204, 21, 0.65)',
       coreColor: '#facc15',
       coreDark: '#a16207',
       ballColor: '#eab308',
@@ -129,8 +114,6 @@
       id: 'plasma',
       name: 'PLASMA VOID',
       style: 'plasma',
-      rarity: 'MYTHIC 🔮',
-      glowColor: 'rgba(232, 121, 249, 0.6)',
       coreColor: '#e879f9',
       coreDark: '#701a75',
       ballColor: '#6b21a8',
@@ -144,8 +127,6 @@
       id: 'toxic',
       name: 'TOXIC FLAIL',
       style: 'spiked',
-      rarity: 'BIO ☣️',
-      glowColor: 'rgba(74, 222, 128, 0.55)',
       coreColor: '#4ade80',
       coreDark: '#166534',
       ballColor: '#16a34a',
@@ -261,6 +242,59 @@
       gain.connect(this.ctx.destination);
       osc.start(now);
       osc.stop(now + 0.09);
+    }
+
+    shieldBreak() {
+      if (this.muted || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      // High crystalline energy shatter
+      [880, 1320, 1760, 2400].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.45, now + 0.22);
+        gain.gain.setValueAtTime(0.18 / (idx + 1), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      });
+    }
+
+    perfectDodge() {
+      if (this.muted || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      // Sci-fi warp whoosh chime
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.exponentialRampToValueAtTime(1180, now + 0.16);
+      gain.gain.setValueAtTime(0.24, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    }
+
+    chainAdjust() {
+      if (this.muted || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      // Subtle metallic click
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1600, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.035);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.045);
     }
   }
 
@@ -396,6 +430,17 @@
       this.alive = true;
       this.shieldTimer = isBot ? 1.4 : 2.4;
 
+      // 1-Hit Energy Shield Armor (Recharges after 12s without damage)
+      this.hasShield = true;
+      this.shieldRechargeTimer = 0;
+      this.shieldRechargeMax = 12;
+      this.shieldGraceTimer = 0; // 0.65s invulnerable grace window after shield breaks
+
+      // Dynamic Chain Length (Reach control via Scroll Wheel: 0.65x - 1.45x)
+      this.chainLengthFactor = 1.0;
+      this.activeChainFactor = 1.0;
+      this.snapWhipTension = 0; // Visual kinetic tell when reversing spin
+
       // Boost & Instant Juke-Dodge
       this.boostEnergy = 100;
       this.boosting = false;
@@ -436,7 +481,16 @@
     }
 
     calcChainLen() {
-      return 98 + (this.ballRadius - 22) * 1.38;
+      const base = 98 + (this.ballRadius - 22) * 1.38;
+      return base * this.activeChainFactor;
+    }
+
+    adjustChain(delta) {
+      const prev = this.chainLengthFactor;
+      this.chainLengthFactor = clamp(this.chainLengthFactor + delta, 0.65, 1.45);
+      if (this === player && Math.abs(prev - this.chainLengthFactor) > 0.01) {
+        sfx.chainAdjust();
+      }
     }
 
     getSizeMult() {
@@ -458,6 +512,7 @@
       this.spinCmd = spinCmd;
 
       if (this.shieldTimer > 0) this.shieldTimer = Math.max(0, this.shieldTimer - dt);
+      if (this.shieldGraceTimer > 0) this.shieldGraceTimer = Math.max(0, this.shieldGraceTimer - dt);
       if (this.jukeTimer > 0) this.jukeTimer = Math.max(0, this.jukeTimer - dt);
       if (this.closeCallCooldown > 0) this.closeCallCooldown = Math.max(0, this.closeCallCooldown - dt);
       if (this.streakTimer > 0) {
@@ -465,7 +520,21 @@
         if (this.streakTimer <= 0) this.streakCount = 0;
       }
 
-      // Smoothly grow ball & chain
+      // Auto-recharge energy shield after 12s
+      if (!this.hasShield) {
+        this.shieldRechargeTimer += dt;
+        if (this.shieldRechargeTimer >= this.shieldRechargeMax) {
+          this.hasShield = true;
+          this.shieldRechargeTimer = 0;
+          if (this === player && mode === 'playing') {
+            addFloatingText(this.x, this.y - 28, '🛡️ SHIELD RESTORED!', '#38bdf8', 20);
+            sfx.pickup(12);
+          }
+        }
+      }
+
+      // Smoothly grow ball & dynamic chain reach
+      this.activeChainFactor = lerp(this.activeChainFactor, this.chainLengthFactor, Math.min(1, dt * 7));
       const targetBallR = this.calcBallRadius();
       this.ballRadius = lerp(this.ballRadius, targetBallR, Math.min(1, dt * 6));
       this.chainLen = lerp(this.chainLen, this.calcChainLen(), Math.min(1, dt * 6));
@@ -481,11 +550,11 @@
       const ny = mag > 0.05 ? desiredDirY / mag : Math.sin(this.facing);
 
       // Instant Juke-Dash on fresh boost tap (makes dodging feel razor-sharp!)
-      if (this.boosting && !this.wasBoosting && this.boostEnergy >= 10) {
-        this.jukeTimer = 0.14;
-        this.vx = nx * 640;
-        this.vy = ny * 640;
-        this.boostEnergy = Math.max(0, this.boostEnergy - 7);
+      if (this.boosting && !this.wasBoosting && this.boostEnergy >= 8) {
+        this.jukeTimer = 0.18;
+        this.vx = nx * 680;
+        this.vy = ny * 680;
+        this.boostEnergy = Math.max(0, this.boostEnergy - 8);
         if (!this.isBot) {
           spawnShockwave(this.x, this.y, 48, '#38bdf8');
         }
@@ -577,6 +646,7 @@
         const targetTangSpeed = this.boosting ? 880 : 760;
         const desiredTang = spinCmd * targetTangSpeed;
         const isReversing = tangVel * spinCmd < 0;
+        this.snapWhipTension = isReversing ? 1.0 : Math.max(0, this.snapWhipTension - dt * 3.5);
 
         // Extra snap-brake torque when reversing direction so fake-outs feel instant!
         const torque = (isReversing ? 2900 : 1850) * dt;
@@ -947,7 +1017,7 @@
       }
     }
 
-    // 2. Ball-vs-Core SMASH KILLS (Forgiving arcade hurtbox + Close Call reward!)
+    // 2. Ball-vs-Core COMBAT (Momentum Damage, 1-Hit Energy Shield & Perfect Dodge!)
     for (let i = 0; i < alive.length; i++) {
       const attacker = alive[i];
       if (!attacker.alive) continue;
@@ -959,9 +1029,85 @@
 
         const d = dist(attacker.bx, attacker.by, victim.x, victim.y);
         const killDist = attacker.ballRadius * 0.90 + victim.coreRadius * 0.65;
+        const dx = victim.x - attacker.bx;
+        const dy = victim.y - attacker.by;
+        const nd = Math.hypot(dx, dy) || 0.001;
+        const nx = dx / nd;
+        const ny = dy / nd;
 
+        // Relative impact velocity between attacker ball and victim core
+        const rvx = attacker.bvx - victim.vx;
+        const rvy = attacker.bvy - victim.vy;
+        const impactVel = Math.hypot(rvx, rvy);
+
+        // A. PERFECT DODGE: Dashing right as an incoming lethal ball passes by!
+        if (
+          victim === player &&
+          mode === 'playing' &&
+          victim.jukeTimer > 0 &&
+          victim.closeCallCooldown <= 0 &&
+          attacker.ballSpeed > 300 &&
+          d < killDist + 38
+        ) {
+          victim.closeCallCooldown = 0.8;
+          victim.boostEnergy = 100; // Instant 100% boost refill!
+          victim.addScore(15);
+          sfx.perfectDodge();
+          spawnShockwave(victim.x, victim.y, 65, '#38bdf8');
+          spawnSparks(victim.x, victim.y, 18, '#38bdf8', '#ffffff', 160, 420);
+          addFloatingText(victim.x, victim.y - 30, '⚡ PERFECT DODGE! +100% BOOST', '#38bdf8', 22);
+          hitStopTimer = 0.035;
+        }
+
+        // B. BALL-TO-CORE IMPACT
         if (d < killDist) {
-          handleKill(attacker, victim);
+          // If victim is in post-shield shatter grace period, ignore lethal damage
+          if (victim.shieldGraceTimer > 0) {
+            victim.vx += nx * 140;
+            victim.vy += ny * 140;
+            continue;
+          }
+
+          if (impactVel < 260) {
+            // TIER 1: LOW-SPEED GLANCE (No cheap kills when barely moving!)
+            victim.vx += nx * 240;
+            victim.vy += ny * 240;
+            attacker.bvx -= nx * 160;
+            attacker.bvy -= ny * 160;
+            spawnSparks(victim.x, victim.y, 6, '#94a3b8', '#ffffff', 100, 220);
+            if (victim === player || attacker === player) {
+              sfx.clang(0.35);
+              addFloatingText(victim.x, victim.y - 24, 'DEFLECTED', '#94a3b8', 16);
+            }
+          } else if (victim.hasShield) {
+            // TIER 2: 1-HIT ENERGY SHIELD ABSORPTION
+            victim.hasShield = false;
+            victim.shieldRechargeTimer = 0;
+            victim.shieldGraceTimer = 0.65; // 0.65s grace window to dash away!
+            victim.boostEnergy = Math.min(100, victim.boostEnergy + 32); // Escape boost!
+
+            victim.vx += nx * 440;
+            victim.vy += ny * 440;
+            attacker.bvx -= nx * 240;
+            attacker.bvy -= ny * 240;
+
+            spawnShockwave(victim.x, victim.y, 75, '#38bdf8');
+            spawnSparks(victim.x, victim.y, 24, '#38bdf8', '#ffffff', 180, 520);
+            sfx.shieldBreak();
+
+            if (attacker === player && mode === 'playing') {
+              shake = Math.max(shake, 14);
+              hitStopTimer = 0.04;
+              addFloatingText(victim.x, victim.y - 28, '🛡️ SHIELD BROKEN!', '#fde047', 24);
+            } else if (victim === player && mode === 'playing') {
+              shake = 16;
+              hitStopTimer = 0.04;
+              addFloatingText(victim.x, victim.y - 28, '⚠️ SHIELD SHATTERED! DASH!', '#38bdf8', 24);
+            }
+          } else {
+            // TIER 3: LETHAL SMASH!
+            handleKill(attacker, victim);
+          }
         } else if (
           victim === player &&
           mode === 'playing' &&
@@ -969,7 +1115,7 @@
           attacker.ballSpeed > 260 &&
           d < killDist + 34
         ) {
-          // Thrilling Near-Miss Dodge Reward!
+          // Standard Near-Miss Dodge
           victim.closeCallCooldown = 0.75;
           victim.boostEnergy = Math.min(100, victim.boostEnergy + 18);
           victim.addScore(5);
@@ -1027,7 +1173,28 @@
 
     const isGiantSlayer = victim.ballRadius > attacker.ballRadius * 1.35;
     const bonus = isGiantSlayer ? 60 : 25;
-    attacker.addScore(bonus);
+
+    let multiplier = 1.0;
+    let label = 'SMASH!';
+    let col = '#fde047';
+    if (isGiantSlayer) {
+      label = 'GIANT SLAYER! +60';
+      col = '#38bdf8';
+      multiplier = 2.0;
+    } else if (attacker.streakCount === 2) {
+      label = 'DOUBLE SMASH! +50%';
+      col = '#fb923c';
+      multiplier = 1.5;
+    } else if (attacker.streakCount === 3) {
+      label = 'TRIPLE WRECK! +100%';
+      col = '#f43f5e';
+      multiplier = 2.0;
+    } else if (attacker.streakCount >= 4) {
+      label = `UNSTOPPABLE x${attacker.streakCount}! +150%`;
+      col = '#e879f9';
+      multiplier = 2.5;
+    }
+    attacker.addScore(Math.floor(bonus * multiplier));
 
     spawnKillLoot(victim);
     spawnSparks(victim.x, victim.y, 34, victim.skin.coreColor, '#fde047', 120, 520);
@@ -1040,22 +1207,6 @@
       hitStopTimer = 0.055; // Crunchy 55ms impact freeze!
       shake = Math.max(shake, isGiantSlayer ? 22 : 15);
       sfx.smash(isGiantSlayer || attacker.streakCount >= 2);
-
-      let label = 'SMASH!';
-      let col = '#fde047';
-      if (isGiantSlayer) {
-        label = 'GIANT SLAYER! +60';
-        col = '#38bdf8';
-      } else if (attacker.streakCount === 2) {
-        label = 'DOUBLE SMASH!';
-        col = '#fb923c';
-      } else if (attacker.streakCount === 3) {
-        label = 'TRIPLE WRECK!';
-        col = '#f43f5e';
-      } else if (attacker.streakCount >= 4) {
-        label = `UNSTOPPABLE x${attacker.streakCount}!`;
-        col = '#e879f9';
-      }
       addFloatingText(victim.x, victim.y - 26, label, col, isGiantSlayer ? 30 : 26);
     } else if (victim === player && mode === 'playing') {
       shake = 24;
@@ -1289,6 +1440,23 @@
     hudBallSize.textContent = `BALL SIZE: ${player.getSizeMult().toFixed(1)}x`;
     hudKills.textContent = player.kills;
 
+    if (hudShieldText) {
+      if (player.hasShield) {
+        hudShieldText.textContent = 'READY';
+        hudShieldText.style.color = '#38bdf8';
+      } else {
+        const remaining = Math.max(0, Math.ceil(player.shieldRechargeMax - player.shieldRechargeTimer));
+        hudShieldText.textContent = `${remaining}s`;
+        hudShieldText.style.color = '#fbbf24';
+      }
+    }
+
+    if (chainFill && chainVal) {
+      const pct = clamp(((player.activeChainFactor - 0.65) / (1.45 - 0.65)) * 100, 0, 100);
+      chainFill.style.width = `${pct.toFixed(0)}%`;
+      chainVal.textContent = `${player.activeChainFactor.toFixed(2)}x`;
+    }
+
     const top = sorted.slice(0, 7);
     let html = '';
     for (let i = 0; i < top.length; i++) {
@@ -1488,6 +1656,7 @@
     // 2. Linked Steel Chain from Core -> Ball
     const linkCount = Math.max(5, Math.floor(dist(e.x, e.y, e.bx, e.by) / 18));
     ctx.save();
+    const hasTension = e.snapWhipTension > 0.15;
     for (let i = 1; i < linkCount; i++) {
       const t = i / linkCount;
       const lx = lerp(e.x, e.bx, t);
@@ -1497,7 +1666,13 @@
       ctx.save();
       ctx.translate(lx, ly);
       ctx.rotate(ang);
-      ctx.strokeStyle = (e.boosting || e.spinCmd !== 0) ? e.skin.trailColor : e.skin.chainColor;
+      ctx.strokeStyle = hasTension
+        ? '#ffffff'
+        : ((e.boosting || e.spinCmd !== 0) ? e.skin.trailColor : e.skin.chainColor);
+      if (hasTension) {
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = e.snapWhipTension * 16;
+      }
       ctx.lineWidth = i % 2 === 0 ? 4.2 : 3.2;
       ctx.beginPath();
       ctx.ellipse(0, 0, 7, i % 2 === 0 ? 4 : 2.2, 0, 0, Math.PI * 2);
@@ -1519,6 +1694,33 @@
       ctx.lineWidth = 3;
       ctx.fill();
       ctx.stroke();
+    }
+
+    // 1-Hit Energy Shield Armor (Hexagonal rotating shield)
+    if (e.hasShield) {
+      const shieldR = e.coreRadius + 8;
+      ctx.save();
+      ctx.rotate(Date.now() * 0.0028);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (let s = 0; s < 6; s++) {
+        const sa = (s / 6) * Math.PI * 2;
+        const sx = Math.cos(sa) * shieldR;
+        const sy = Math.sin(sa) * shieldR;
+        if (s === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Shield grace invulnerability flicker
+    if (e.shieldGraceTimer > 0) {
+      ctx.globalAlpha = (Math.floor(Date.now() / 65) % 2 === 0) ? 0.35 : 0.95;
     }
 
     ctx.rotate(e.facing);
@@ -1706,19 +1908,8 @@
     }
   }
 
-  // ═══ SKIN PICKER & AVATAR PREVIEW (SKRIBBL STYLE) ═══
-  function selectSkin(idx) {
-    selectedSkinIdx = idx;
-    const skin = SKINS[selectedSkinIdx];
-    if (skinNameLabel) skinNameLabel.textContent = skin.name;
-    if (skinRarityLabel) skinRarityLabel.textContent = skin.rarity || 'RARE ⚡';
-    document.querySelectorAll('.skin-dot').forEach((el, i) => {
-      el.classList.toggle('selected', i === idx);
-    });
-  }
-
+  // ═══ SKIN PICKER UI ═══
   function buildSkinPicker() {
-    if (!skinPicker) return;
     skinPicker.innerHTML = '';
     SKINS.forEach((skin, idx) => {
       const btn = document.createElement('button');
@@ -1727,70 +1918,23 @@
       btn.title = skin.name;
 
       const c = document.createElement('canvas');
-      c.width = 40;
-      c.height = 40;
+      c.width = 64;
+      c.height = 64;
       const sctx = c.getContext('2d');
-      drawBallSprite(sctx, 20, 20, 11, 0.35, skin, false);
+      drawBallSprite(sctx, 32, 32, 18, 0.35, skin, false);
       btn.appendChild(c);
 
       btn.addEventListener('click', () => {
-        selectSkin(idx);
+        selectedSkinIdx = idx;
+        skinNameLabel.textContent = skin.name;
+        document.querySelectorAll('.skin-dot').forEach((el, i) => {
+          el.classList.toggle('selected', i === idx);
+        });
       });
 
       skinPicker.appendChild(btn);
     });
-    selectSkin(selectedSkinIdx);
-  }
-
-  let avatarAngle = 0;
-  function renderAvatarPreview() {
-    if (!avatarCanvas || mode !== 'lobby') return;
-    const actx = avatarCanvas.getContext('2d');
-    actx.clearRect(0, 0, 130, 130);
-
-    const skin = SKINS[selectedSkinIdx];
-    avatarAngle += 0.035;
-    const cx = 65;
-    const cy = 65;
-    const orbitR = 38;
-    const bx = cx + Math.cos(avatarAngle) * orbitR;
-    const by = cy + Math.sin(avatarAngle) * orbitR;
-
-    // Outer ambient glow
-    const grad = actx.createRadialGradient(cx, cy, 10, cx, cy, 60);
-    grad.addColorStop(0, skin.glowColor || 'rgba(251, 146, 60, 0.35)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    actx.fillStyle = grad;
-    actx.beginPath();
-    actx.arc(cx, cy, 60, 0, Math.PI * 2);
-    actx.fill();
-
-    // Steel chain link
-    actx.strokeStyle = skin.chainColor || '#94a3b8';
-    actx.lineWidth = 3.5;
-    actx.lineCap = 'round';
-    actx.beginPath();
-    actx.moveTo(cx, cy);
-    actx.lineTo(bx, by);
-    actx.stroke();
-
-    // Player core
-    actx.fillStyle = skin.coreColor || '#38bdf8';
-    actx.beginPath();
-    actx.arc(cx, cy, 13, 0, Math.PI * 2);
-    actx.fill();
-    actx.strokeStyle = '#ffffff';
-    actx.lineWidth = 2.5;
-    actx.stroke();
-
-    // Core center eye
-    actx.fillStyle = '#0f172a';
-    actx.beginPath();
-    actx.arc(cx, cy, 4.5, 0, Math.PI * 2);
-    actx.fill();
-
-    // Wrecking Ball with Spikes
-    drawBallSprite(actx, bx, by, 16, avatarAngle * 2.2, skin, false);
+    skinNameLabel.textContent = SKINS[selectedSkinIdx].name;
   }
 
   // ═══ INPUT LISTENERS ═══
@@ -1798,6 +1942,17 @@
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
   });
+
+  // Mouse Scroll Wheel adjusts Chain Reach (0.65x tight defense to 1.45x wide sweep)
+  window.addEventListener('wheel', (e) => {
+    if (mode !== 'playing' || !player || !player.alive) return;
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      player.adjustChain(0.08);
+    } else if (e.deltaY > 0) {
+      player.adjustChain(-0.08);
+    }
+  }, { passive: false });
 
   window.addEventListener('mousemove', (e) => {
     input.mouseX = e.clientX;
@@ -1842,6 +1997,10 @@
     } else if (mode === 'playing' && (e.code === 'KeyD' || e.code === 'KeyE' || e.code === 'ArrowRight')) {
       input.spinCw = true;
       input.lastSpinDir = 1;
+    } else if (mode === 'playing' && (e.code === 'KeyW' || e.code === 'ArrowUp')) {
+      if (player && player.alive) player.adjustChain(0.08);
+    } else if (mode === 'playing' && (e.code === 'KeyS' || e.code === 'ArrowDown')) {
+      if (player && player.alive) player.adjustChain(-0.08);
     } else if (e.code === 'Enter') {
       if (mode === 'dead') startGame();
       else if (mode === 'lobby' && document.activeElement === nicknameInput) startGame();
@@ -1930,6 +2089,20 @@
     input.boosting = false;
   });
 
+  if (mobileChainShortBtn) {
+    mobileChainShortBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (player && player.alive) player.adjustChain(-0.1);
+    }, { passive: false });
+  }
+
+  if (mobileChainLongBtn) {
+    mobileChainLongBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (player && player.alive) player.adjustChain(0.1);
+    }, { passive: false });
+  }
+
   // Buttons
   playBtn.addEventListener('click', startGame);
   respawnBtn.addEventListener('click', startGame);
@@ -1937,83 +2110,15 @@
     mode = 'lobby';
     deathOverlay.classList.add('hidden');
     lobbyOverlay.classList.remove('hidden');
-    selectSkin(selectedSkinIdx);
   });
 
   muteBtn.addEventListener('click', () => {
     sfx.muted = !sfx.muted;
     muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
-    if (topMuteBtn) topMuteBtn.textContent = sfx.muted ? '🔇' : '🔊';
   });
 
   if (fsBtn) fsBtn.addEventListener('click', toggleGameFullscreen);
   if (lobbyFsBtn) lobbyFsBtn.addEventListener('click', toggleGameFullscreen);
-
-  // ═══ SKRIBBL LOBBY CONTROLS ═══
-  if (prevSkinBtn) {
-    prevSkinBtn.addEventListener('click', () => {
-      selectSkin((selectedSkinIdx - 1 + SKINS.length) % SKINS.length);
-    });
-  }
-  if (nextSkinBtn) {
-    nextSkinBtn.addEventListener('click', () => {
-      selectSkin((selectedSkinIdx + 1) % SKINS.length);
-    });
-  }
-
-  const COOL_NAMES = [
-    'Wrecker', 'ApexCrusher', 'IronSpiker', 'VortexKing', 'ChainBreaker',
-    'DoomOrbit', 'TitanFlail', 'SpikeGod', 'CoreBreaker', 'HyperClaw',
-    'NovaWhip', 'StormCore', 'PulseStriker', 'ShadowWrecker', 'BioHazard',
-    'OmegaSmasher', 'SteelViper', 'OrbitReaper', 'CyberWrecker', 'Goliath'
-  ];
-  if (randomNickBtn) {
-    randomNickBtn.addEventListener('click', () => {
-      const rnd = COOL_NAMES[Math.floor(Math.random() * COOL_NAMES.length)];
-      nicknameInput.value = rnd;
-      nicknameInput.focus();
-    });
-  }
-
-  let toastTimer = null;
-  function showToast(msg) {
-    if (!skribblToast) return;
-    skribblToast.textContent = msg;
-    skribblToast.classList.remove('hidden');
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      skribblToast.classList.add('hidden');
-    }, 3200);
-  }
-
-  if (privateRoomBtn) {
-    privateRoomBtn.addEventListener('click', () => {
-      const room = Math.random().toString(36).substring(2, 7).toUpperCase();
-      const link = `${window.location.origin}/wreckball?room=${room}`;
-      navigator.clipboard.writeText(link).catch(() => {});
-      showToast(`✓ Private Arena #${room} invite copied! Share with friends.`);
-      setTimeout(() => {
-        startGame();
-      }, 1000);
-    });
-  }
-
-  if (topMuteBtn) {
-    topMuteBtn.addEventListener('click', () => {
-      sfx.muted = !sfx.muted;
-      topMuteBtn.textContent = sfx.muted ? '🔇' : '🔊';
-      muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
-    });
-  }
-  if (topFsBtn) {
-    topFsBtn.addEventListener('click', toggleGameFullscreen);
-  }
-  if (topShareBtn) {
-    topShareBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(window.location.origin + '/wreckball').catch(() => {});
-      showToast('✓ WreckBall.io Arena link copied!');
-    });
-  }
 
   // ═══ BOOT & LOOP ═══
   buildSkinPicker();
@@ -2027,7 +2132,6 @@
     update(dt);
     drawBackground();
     drawMinimap();
-    renderAvatarPreview();
 
     requestAnimationFrame(loop);
   }
