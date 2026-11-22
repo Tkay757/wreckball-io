@@ -8,63 +8,194 @@
   <link rel="stylesheet" href="/wreckball/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&family=Lilita+One&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
 
-  <!-- ═══ ULTRA-CLEAN LANDING OVERLAY (LIVE ARENA IN BACKGROUND) ═══ -->
+  <!-- ═══ 3-PANEL LOBBY OVERLAY (MATCHING PREVIOUS UI) ═══ -->
   <div id="lobbyOverlay" class="overlay active">
-    <div class="lobby-card">
-      <div class="lobby-badge-row">
-        <a href="https://cratetools.me" target="_blank" rel="noopener noreferrer" class="crate-brand-badge" title="Visit CrateTools.me">⚡ A CrateTools.me Original</a>
-        <button id="lobbyFsBtn" class="lobby-fs-btn" type="button" title="Toggle Fullscreen">⛶ Fullscreen</button>
+    <!-- Top Bar -->
+    <header class="skribbl-topbar">
+      <a href="https://cratetools.me" class="skribbl-back-link" title="Return to CrateTools Home">
+        <span class="skribbl-back-arrow">←</span>
+        <span class="skribbl-brand-text">CrateTools.me</span>
+      </a>
+      <div class="skribbl-top-badge">
+        <span class="badge-dot"></span>
+        <span>WreckBall.io Arena &bull; Live &bull; Free</span>
       </div>
-      <div class="logo-wrap">
-        <h1 class="game-logo">
-          <span class="logo-wreck">WRECK</span><span class="logo-ball">BALL</span><span class="logo-io">.io</span>
-        </h1>
-        <p class="tagline">SWING THE BALL &bull; SMASH CORES &bull; GROW HUGE</p>
+      <div class="skribbl-top-actions">
+        <button id="topMuteBtn" class="skribbl-icon-btn" type="button" title="Toggle Sound">🔊</button>
+        <button id="topFsBtn" class="skribbl-icon-btn" type="button" title="Toggle Fullscreen">⛶</button>
+        <button id="topShareBtn" class="skribbl-icon-btn" type="button" title="Share Game Link">🔗</button>
       </div>
+    </header>
 
-      <!-- Skin Strip (Zero Clutter) -->
-      <div class="skin-picker" id="skinPicker" aria-label="Choose Wrecking Ball Skin"></div>
-      <div class="skin-label" id="skinNameLabel">IRON SPIKER</div>
+    <!-- Main 3-Panel Layout -->
+    <div class="skribbl-container">
+      <!-- LEFT PANEL: How to Play -->
+      <aside class="skribbl-card skribbl-side-card left-card">
+        <div class="card-header">
+          <span class="card-icon">🕹️</span>
+          <h3>HOW TO PLAY</h3>
+        </div>
+        <div class="skribbl-steps">
+          <div class="step-item">
+            <span class="step-num">1</span>
+            <div class="step-info">
+              <h4>Steer Your Core</h4>
+              <p>Mouse steers your vehicle core. Your core is vulnerable—dodge rival flails!</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">2</span>
+            <div class="step-info">
+              <h4>Pure Mouse Drag</h4>
+              <p>No buttons needed! Drag mouse swiftly around your core to whip the spikeball with lethal momentum!</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">3</span>
+            <div class="step-info">
+              <h4>Dodge Dash</h4>
+              <p>Tap <b>[SPACE]</b> for an evasive dash. Near-misses recharge boost energy!</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">4</span>
+            <div class="step-info">
+              <h4>Burst & Grind XP</h4>
+              <p>Destroyed balls burst into grouped XP gems. Collect clusters slowly to grow into a giant boss!</p>
+            </div>
+          </div>
+        </div>
+      </aside>
 
-      <!-- Name + Play -->
-      <div class="play-row">
-        <input id="nicknameInput" type="text" maxlength="14" placeholder="Nickname" value="Wrecker" autocomplete="off" spellcheck="false">
-        <button id="playBtn" class="play-btn" type="button">PLAY</button>
-      </div>
+      <!-- CENTER PANEL: Main Hero Card -->
+      <main class="skribbl-card skribbl-main-card">
+        <!-- Logo -->
+        <div class="logo-wrap">
+          <h1 class="game-logo">
+            <span class="logo-wreck">WRECK</span><span class="logo-ball">BALL</span><span class="logo-io">.io</span>
+          </h1>
+          <p class="tagline">SWING &bull; SMASH &bull; GROW</p>
+        </div>
 
-      <!-- 1-Line Controls -->
-      <div class="controls-strip">
-        <span><b>MOVE</b> Mouse</span>
-        <span class="dot">&bull;</span>
-        <span><b>SPIN</b> ⟲ LMB / ⟳ RMB</span>
-        <span class="dot">&bull;</span>
-        <span><b>DASH</b> Space</span>
-        <span class="dot">&bull;</span>
-        <span><b>CHAIN</b> Scroll Wheel</span>
-      </div>
+        <!-- Avatar Customizer with < and > Arrows -->
+        <div class="avatar-customizer">
+          <button id="prevSkinBtn" class="avatar-nav-btn" type="button" aria-label="Previous Skin">‹</button>
+          <div class="avatar-preview-wrap">
+            <canvas id="avatarCanvas" width="130" height="130"></canvas>
+          </div>
+          <button id="nextSkinBtn" class="avatar-nav-btn" type="button" aria-label="Next Skin">›</button>
+        </div>
+
+        <!-- Skin Name & Rarity -->
+        <div class="skin-meta">
+          <span class="skin-name" id="skinNameLabel">IRON SPIKER</span>
+          <span class="skin-rarity" id="skinRarityLabel">STARTER ⚙️</span>
+        </div>
+
+        <!-- Quick Skin Dots Strip -->
+        <div class="skin-picker" id="skinPicker" aria-label="Choose Wrecking Ball Skin"></div>
+
+        <!-- Nickname Input + Random Dice Button -->
+        <div class="nickname-row">
+          <input id="nicknameInput" type="text" maxlength="14" placeholder="Enter your nickname..." value="Wrecker" autocomplete="off" spellcheck="false">
+          <button id="randomNickBtn" class="random-btn" type="button" title="Randomize Nickname">🎲</button>
+        </div>
+
+        <!-- Primary Action: Huge Green PLAY! Button -->
+        <button id="playBtn" class="skribbl-play-btn" type="button">
+          <span class="play-icon">▶</span>
+          <span>PLAY!</span>
+        </button>
+
+        <!-- Secondary Action: Create Private Room -->
+        <button id="privateRoomBtn" class="skribbl-private-btn" type="button">
+          <span>👾</span>
+          <span>Create Private Arena</span>
+        </button>
+
+        <!-- Pure Mouse Drag Controls Strip -->
+        <div class="controls-strip">
+          <span><b>MOVE</b> Mouse</span>
+          <span class="dot">&bull;</span>
+          <span><b>DASH</b> Space</span>
+          <span class="dot">&bull;</span>
+          <span><b>SHIELD</b> 🛡️ 1-Hit</span>
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL: Live Arena Leaderboard -->
+      <aside class="skribbl-card skribbl-side-card right-card">
+        <div class="card-header">
+          <span class="card-icon">🏆</span>
+          <h3>ARENA RANKS</h3>
+        </div>
+        <div class="skribbl-ranks">
+          <div class="rank-item rank-1">
+            <span class="rank-badge">🥇 1</span>
+            <span class="rank-name">ApexCrusher</span>
+            <span class="rank-score">18,450</span>
+          </div>
+          <div class="rank-item rank-2">
+            <span class="rank-badge">🥈 2</span>
+            <span class="rank-name">VortexKing</span>
+            <span class="rank-score">14,920</span>
+          </div>
+          <div class="rank-item rank-3">
+            <span class="rank-badge">🥉 3</span>
+            <span class="rank-name">ChainReaper</span>
+            <span class="rank-score">12,300</span>
+          </div>
+          <div class="rank-item">
+            <span class="rank-badge">4</span>
+            <span class="rank-name">TitanClaw</span>
+            <span class="rank-score">9,840</span>
+          </div>
+          <div class="rank-item">
+            <span class="rank-badge">5</span>
+            <span class="rank-name">NanoSmasher</span>
+            <span class="rank-score">8,200</span>
+          </div>
+        </div>
+
+        <div class="arena-live-status">
+          <div class="live-dot-row">
+            <span class="pulse-dot"></span>
+            <span class="live-text">40 AI Bots Hunting</span>
+          </div>
+          <div class="arena-perks">
+            <span>⚡ 60 FPS Physics</span>
+            <span>&bull;</span>
+            <span>🛡️ 100% Private</span>
+          </div>
+        </div>
+      </aside>
     </div>
+
+    <!-- Toast Notification -->
+    <div id="skribblToast" class="skribbl-toast hidden">✓ Private Arena link copied! Share with friends.</div>
   </div>
 
   <!-- ═══ IN-GAME HUD ═══ -->
   <div id="hud" class="hud hidden">
-    <!-- Top Left: Quick Kills + Shield + Mute + Fullscreen -->
+    <!-- Top Left: Quick Kills + Shield + Mute + Lock + Fullscreen -->
     <div class="hud-top-left">
       <div class="stat-pill kills-pill">
         <span class="pill-label">SMASHES</span>
         <span id="hudKills" class="pill-val">0</span>
       </div>
-      <div class="stat-pill shield-pill" id="hudShieldPill" title="Energy Shield: absorbs 1 hit, recharges after 12s">
+      <div class="stat-pill shield-pill" id="hudShieldPill" title="Energy Shield: absorbs 1 hit, recharges after 10s">
         <span class="pill-label" style="color: #38bdf8;">SHIELD</span>
         <span id="hudShieldVal" class="pill-val" style="font-size: 13px; color: #38bdf8; display: flex; align-items: center; gap: 4px;">
           <span>🛡️</span><span id="hudShieldText">READY</span>
         </span>
       </div>
       <button id="muteBtn" class="icon-btn" type="button" title="Toggle Sound">🔊</button>
+      <button id="mouseLockBtn" class="icon-btn" type="button" title="Lock Mouse Cursor (ESC to unlock)">🔒</button>
       <button id="fsBtn" class="icon-btn" type="button" title="Toggle Fullscreen">⛶</button>
     </div>
 
@@ -86,19 +217,11 @@
       <canvas id="minimapCanvas" width="136" height="136"></canvas>
     </div>
 
-    <!-- Bottom Center: Spin Indicators + Dodge Dash Bar + Chain Reach Meter -->
+    <!-- Bottom Center: Dash Energy Bar (Pure Mouse Dragging HUD) -->
     <div class="boost-hud">
-      <div class="chain-meter-row">
-        <span class="chain-label">CHAIN REACH (SCROLL)</span>
-        <div class="chain-track">
-          <div id="chainFill" class="chain-fill"></div>
-        </div>
-        <span id="chainVal" class="chain-val">1.0x</span>
-      </div>
-      <div class="spin-pills">
-        <span id="spinCcwPill" class="spin-pill">⟲ LMB</span>
-        <span class="dash-mid-label">DASH [SPACE]</span>
-        <span id="spinCwPill" class="spin-pill">RMB ⟳</span>
+      <div class="dash-hud-header">
+        <span class="dash-label">⚡ DASH ENERGY</span>
+        <span class="dash-key-hint">[SPACE]</span>
       </div>
       <div class="boost-track">
         <div id="boostFill" class="boost-fill"></div>
@@ -107,14 +230,6 @@
 
     <!-- Mobile Touch Controls (Shown on Touch Devices) -->
     <div id="mobileControls" class="mobile-controls hidden">
-      <div class="mobile-chain-row">
-        <button id="mobileChainShortBtn" class="mobile-chain-btn" type="button" title="Shorten Chain (Tight Defense)">⛓️ -</button>
-        <button id="mobileChainLongBtn" class="mobile-chain-btn" type="button" title="Extend Chain (Wide Reach)">⛓️ +</button>
-      </div>
-      <div class="mobile-spin-row">
-        <button id="mobileCcwBtn" class="mobile-spin-btn" type="button">⟲</button>
-        <button id="mobileCwBtn" class="mobile-spin-btn" type="button">⟳</button>
-      </div>
       <button id="mobileBoostBtn" class="mobile-boost-btn" type="button">DASH</button>
     </div>
   </div>
@@ -141,8 +256,8 @@
       </div>
 
       <div class="death-actions">
-        <button id="respawnBtn" class="play-btn respawn-btn" type="button">PLAY AGAIN</button>
-        <button id="backLobbyBtn" class="secondary-btn" type="button">SKINS</button>
+        <button id="respawnBtn" class="skribbl-play-btn respawn-btn" type="button">PLAY AGAIN</button>
+        <button id="backLobbyBtn" class="secondary-btn" type="button">LOBBY</button>
       </div>
       <div class="respawn-hint">Press SPACE or ENTER for instant rematch</div>
     </div>

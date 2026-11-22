@@ -1,7 +1,8 @@
 /**
  * WreckBall.io — Swing. Smash. Grow.
- * Dead-simple 1-control physics wrecking ball .io prototype
- * Works on Desktop (Mouse + Click/Space) and Mobile (Touch Joystick + Whip Button)
+ * Pure mouse dragging flail mechanics with high string momentum
+ * Massive 8500px arena, ball shatter burst animation, grouped XP scattering,
+ * single clean direction arrow, and squishy .io UI
  */
 
 (() => {
@@ -17,31 +18,37 @@
   const deathOverlay = document.getElementById('deathOverlay');
   const hud = document.getElementById('hud');
 
+  // Lobby 3-panel UI elements
   const skinPicker = document.getElementById('skinPicker');
   const skinNameLabel = document.getElementById('skinNameLabel');
+  const skinRarityLabel = document.getElementById('skinRarityLabel');
+  const prevSkinBtn = document.getElementById('prevSkinBtn');
+  const nextSkinBtn = document.getElementById('nextSkinBtn');
+  const avatarCanvas = document.getElementById('avatarCanvas');
   const nicknameInput = document.getElementById('nicknameInput');
+  const randomNickBtn = document.getElementById('randomNickBtn');
   const playBtn = document.getElementById('playBtn');
+  const privateRoomBtn = document.getElementById('privateRoomBtn');
+  const skribblToast = document.getElementById('skribblToast');
+
   const respawnBtn = document.getElementById('respawnBtn');
   const backLobbyBtn = document.getElementById('backLobbyBtn');
+
   const muteBtn = document.getElementById('muteBtn');
+  const mouseLockBtn = document.getElementById('mouseLockBtn');
   const fsBtn = document.getElementById('fsBtn');
-  const lobbyFsBtn = document.getElementById('lobbyFsBtn');
+  const topMuteBtn = document.getElementById('topMuteBtn');
+  const topFsBtn = document.getElementById('topFsBtn');
+  const topShareBtn = document.getElementById('topShareBtn');
+
   const mobileControls = document.getElementById('mobileControls');
   const mobileBoostBtn = document.getElementById('mobileBoostBtn');
-  const mobileCcwBtn = document.getElementById('mobileCcwBtn');
-  const mobileCwBtn = document.getElementById('mobileCwBtn');
-  const spinCcwPill = document.getElementById('spinCcwPill');
-  const spinCwPill = document.getElementById('spinCwPill');
 
   const hudScore = document.getElementById('hudScore');
   const hudBallSize = document.getElementById('hudBallSize');
   const hudKills = document.getElementById('hudKills');
-  const hudShieldText = document.getElementById('hudShieldText');
   const hudShieldPill = document.getElementById('hudShieldPill');
-  const chainFill = document.getElementById('chainFill');
-  const chainVal = document.getElementById('chainVal');
-  const mobileChainShortBtn = document.getElementById('mobileChainShortBtn');
-  const mobileChainLongBtn = document.getElementById('mobileChainLongBtn');
+  const hudShieldText = document.getElementById('hudShieldText');
   const leaderboardList = document.getElementById('leaderboardList');
   const boostFill = document.getElementById('boostFill');
   const killFeed = document.getElementById('killFeed');
@@ -51,16 +58,17 @@
   const deathKills = document.getElementById('deathKills');
   const deathPeak = document.getElementById('deathPeak');
 
-  // ═══ WORLD CONFIG ═══
-  const WORLD_RADIUS = 2400;
-  const BOT_COUNT = 20;
-  const TARGET_SHARDS = 260;
+  // ═══ WORLD CONFIG (MASSIVE ARENA WITH NATURAL BOT DISPERSION) ═══
+  const WORLD_RADIUS = 8500;
+  const BOT_COUNT = 40;
+  const TARGET_SHARDS = 1400;
 
   // ═══ SKINS (PURE COSMETIC FLEX) ═══
   const SKINS = [
     {
       id: 'iron',
       name: 'IRON SPIKER',
+      rarity: 'STARTER ⚙️',
       style: 'spiked',
       coreColor: '#38bdf8',
       coreDark: '#0369a1',
@@ -69,11 +77,13 @@
       ballDark: '#1e293b',
       spikeColor: '#e2e8f0',
       trailColor: '#fb923c',
-      chainColor: '#94a3b8'
+      chainColor: '#94a3b8',
+      glowColor: 'rgba(56, 189, 248, 0.35)'
     },
     {
       id: 'magma',
       name: 'MAGMA METEOR',
+      rarity: 'RARE 🔥',
       style: 'magma',
       coreColor: '#fb923c',
       coreDark: '#9a3412',
@@ -82,11 +92,13 @@
       ballDark: '#450a0a',
       spikeColor: '#f97316',
       trailColor: '#ef4444',
-      chainColor: '#f97316'
+      chainColor: '#f97316',
+      glowColor: 'rgba(239, 68, 68, 0.35)'
     },
     {
       id: 'saw',
       name: 'CYBER SAW',
+      rarity: 'EPIC ⚡',
       style: 'saw',
       coreColor: '#22d3ee',
       coreDark: '#155e75',
@@ -95,11 +107,13 @@
       ballDark: '#020617',
       spikeColor: '#22d3ee',
       trailColor: '#06b6d4',
-      chainColor: '#38bdf8'
+      chainColor: '#38bdf8',
+      glowColor: 'rgba(34, 211, 238, 0.35)'
     },
     {
       id: 'gold',
       name: 'GOLDEN CROWN',
+      rarity: 'LEGENDARY 👑',
       style: 'crown',
       coreColor: '#facc15',
       coreDark: '#a16207',
@@ -108,11 +122,13 @@
       ballDark: '#713f12',
       spikeColor: '#fef08a',
       trailColor: '#fde047',
-      chainColor: '#facc15'
+      chainColor: '#facc15',
+      glowColor: 'rgba(250, 204, 21, 0.35)'
     },
     {
       id: 'plasma',
       name: 'PLASMA VOID',
+      rarity: 'MYTHIC 🔮',
       style: 'plasma',
       coreColor: '#e879f9',
       coreDark: '#701a75',
@@ -121,11 +137,13 @@
       ballDark: '#2e1065',
       spikeColor: '#e879f9',
       trailColor: '#d946ef',
-      chainColor: '#c084fc'
+      chainColor: '#c084fc',
+      glowColor: 'rgba(232, 121, 249, 0.35)'
     },
     {
       id: 'toxic',
       name: 'TOXIC FLAIL',
+      rarity: 'TOXIC ☣️',
       style: 'spiked',
       coreColor: '#4ade80',
       coreDark: '#166534',
@@ -134,9 +152,82 @@
       ballDark: '#052e16',
       spikeColor: '#a3e635',
       trailColor: '#4ade80',
-      chainColor: '#86efac'
+      chainColor: '#86efac',
+      glowColor: 'rgba(74, 222, 128, 0.35)'
     }
   ];
+
+  // ═══ BOT IQ TIERS (LOW -> MED -> HIGH -> EXTREME) ═══
+  const BOT_IQ_TIERS = {
+    LOW: {
+      id: 'LOW',
+      name: 'LOW',
+      badge: '🟢 ROOKIE',
+      color: '#4ade80',
+      reactionMin: 0.36,
+      reactionMax: 0.58,
+      aimNoise: 0.55,       // +/- 31 degrees aim jitter
+      visionCone: 85 * Math.PI / 180, // 85 deg vision cone
+      visionRange: 420,
+      dangerThreshold: 0.50,
+      canJukeDash: false,
+      whipProb: 0.35,
+      orbitOffset: 0.70,
+      lootDesire: 1.8,      // Easily distracted by tiny ambient food
+      names: ['RustyBot', 'DerpWhip', 'ClumsyClang', 'SlowRoller', 'NoobMace', 'PebblePuff', 'ButterFingers', 'WobblyCore']
+    },
+    MED: {
+      id: 'MED',
+      name: 'MED',
+      badge: '🟡 VETERAN',
+      color: '#facc15',
+      reactionMin: 0.22,
+      reactionMax: 0.34,
+      aimNoise: 0.26,       // +/- 15 degrees
+      visionCone: 140 * Math.PI / 180,
+      visionRange: 560,
+      dangerThreshold: 0.65,
+      canJukeDash: true,
+      whipProb: 0.65,
+      orbitOffset: 0.95,
+      lootDesire: 1.0,
+      names: ['IronKing', 'WhipMaster', 'SteelViper', 'HeavyMetal', 'SpikeLord', 'OrbitSmash', 'RazorOrb', 'HammerTime', 'BoomBall']
+    },
+    HIGH: {
+      id: 'HIGH',
+      name: 'HIGH',
+      badge: '🔴 ELITE',
+      color: '#fb923c',
+      reactionMin: 0.12,
+      reactionMax: 0.20,
+      aimNoise: 0.10,       // +/- 6 degrees
+      visionCone: 210 * Math.PI / 180,
+      visionRange: 750,
+      dangerThreshold: 0.90,
+      canJukeDash: true,
+      whipProb: 0.88,
+      orbitOffset: 1.15,
+      lootDesire: 0.6,      // Focuses on combat & kills
+      names: ['ApexPredator', 'DoomSwing', 'TitanSwing', 'VortexKing', 'CrushZone', 'FlailFury', 'MeteorX', 'Juggernaut']
+    },
+    EXTREME: {
+      id: 'EXTREME',
+      name: 'EXTREME',
+      badge: '⚡ TITAN BOSS',
+      color: '#f43f5e',
+      reactionMin: 0.06,
+      reactionMax: 0.12,
+      aimNoise: 0.03,       // Surgical precision (+/- 2 deg)
+      visionCone: Math.PI * 2, // Full 360-degree omnidirectional radar
+      visionRange: 980,
+      dangerThreshold: 1.15,
+      canJukeDash: true,
+      whipProb: 0.98,
+      orbitOffset: 1.30,
+      lootDesire: 0.3,      // Pure predatory killer instinct
+      names: ['ApexCrusher', 'VoidReaper', 'OmegaTitan', 'Executioner', 'CosmicHavoc', 'WorldEater']
+    }
+  };
 
   const BOT_NAME_POOL = [
     'IronKing', 'WhipMaster', 'CrushZone', 'MaceFace', 'SteelViper',
@@ -144,10 +235,11 @@
     'HeavyMetal', 'SpikeLord', 'BoomBall', 'RuinMaker', 'ClangBoss',
     'MeteorX', 'SledgeKid', 'FlailFury', 'WreckIt', 'OrbitSmash',
     'Krunch', 'DoomSwing', 'RazorOrb', 'ScrapKing', 'HammerTime',
-    'BoulderBro', 'ThorBall', 'Vortex99', 'Juggernaut', 'SmashCat'
+    'BoulderBro', 'ThorBall', 'Vortex99', 'Juggernaut', 'SmashCat',
+    'ApexCrusher', 'VoidReaper', 'TitanClaw', 'NanoSmasher', 'ChainReaper'
   ];
 
-  // ═══ PROCEDURAL SOUND ENGINE (ZERO EXTERNAL ASSETS) ═══
+  // ═══ SOUND SYNTHESIZER (PURE WEBAUDIO, ZERO EXTERNAL ASSETS) ═══
   class SoundFX {
     constructor() {
       this.ctx = null;
@@ -169,7 +261,6 @@
       const now = this.ctx.currentTime;
       const vol = Math.min(0.28, 0.08 + intensity * 0.2);
 
-      // Two inharmonic metallic partials for authentic steel clang
       [520, 815, 1340].forEach((freq, i) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
@@ -247,14 +338,13 @@
     shieldBreak() {
       if (this.muted || !this.ctx) return;
       const now = this.ctx.currentTime;
-      // High crystalline energy shatter
-      [880, 1320, 1760, 2400].forEach((freq, idx) => {
+      [780, 1180, 1680, 2340].forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now);
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.45, now + 0.22);
-        gain.gain.setValueAtTime(0.18 / (idx + 1), now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.42, now + 0.22);
+        gain.gain.setValueAtTime(0.20 / (idx + 1), now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
         osc.connect(gain);
         gain.connect(this.ctx.destination);
@@ -263,38 +353,38 @@
       });
     }
 
-    perfectDodge() {
+    shieldRestore() {
       if (this.muted || !this.ctx) return;
       const now = this.ctx.currentTime;
-      // Sci-fi warp whoosh chime
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(420, now);
-      osc.frequency.exponentialRampToValueAtTime(1180, now + 0.16);
-      gain.gain.setValueAtTime(0.24, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.22);
+      [520, 780, 1040].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.35, now + idx * 0.05 + 0.14);
+        gain.gain.setValueAtTime(0.12, now + idx * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.16);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + idx * 0.05);
+        osc.stop(now + idx * 0.05 + 0.17);
+      });
     }
 
-    chainAdjust() {
+    whipSnap() {
       if (this.muted || !this.ctx) return;
       const now = this.ctx.currentTime;
-      // Subtle metallic click
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(1600, now);
-      osc.frequency.exponentialRampToValueAtTime(400, now + 0.035);
-      gain.gain.setValueAtTime(0.06, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(1400, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.08);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.045);
+      osc.stop(now + 0.095);
     }
   }
 
@@ -310,11 +400,13 @@
   const entities = [];
   const shards = [];
   const particles = [];
+  const ballFragments = []; // Ball burst shatter fragments
   const shockwaves = [];
   const floatingTexts = [];
 
   let player = null;
   let kingId = null;
+  let globalPlayerHunterId = null;
 
   // Camera & Juice
   const camera = { x: 0, y: 0, zoom: 0.92 };
@@ -324,16 +416,15 @@
   let pickupComboTimer = 0;
   let lbUpdateTimer = 0;
 
-  // Input (Desktop + Mobile Virtual Joystick)
-  // Left Click = Anticlockwise (-1), Right Click = Clockwise (+1), Space = Dodge Dash
+  // Input (Pure mouse dragging + Space dash)
   const input = {
     mouseX: 0,
     mouseY: 0,
+    pointerLocked: false,
+    lockedAimX: 0,
+    lockedAimY: -120,
     hasPointer: false,
     boosting: false,
-    spinCcw: false,
-    spinCw: false,
-    lastSpinDir: 0,
     isTouch: false,
     joyActive: false,
     joyId: null,
@@ -343,11 +434,32 @@
     joyY: 0
   };
 
-  function getPlayerSpinCmd() {
-    if (input.spinCcw && input.spinCw) return input.lastSpinDir || -1;
-    if (input.spinCcw) return -1; // Anticlockwise (LMB / A / Q)
-    if (input.spinCw) return 1;   // Clockwise (RMB / D / E)
-    return 0;
+  function updatePointerLockUI() {
+    const isLocked = document.pointerLockElement === canvas;
+    input.pointerLocked = isLocked;
+    document.body.classList.toggle('pointer-locked', isLocked);
+    if (mouseLockBtn) {
+      mouseLockBtn.classList.toggle('locked', isLocked);
+      mouseLockBtn.textContent = isLocked ? '🔒' : '🔓';
+      mouseLockBtn.title = isLocked ? 'Mouse Locked (Click or ESC to unlock)' : 'Click to Lock Mouse to Game';
+    }
+  }
+
+  function requestGamePointerLock() {
+    if (mode !== 'playing') return;
+    try {
+      if (canvas && canvas.requestPointerLock && document.pointerLockElement !== canvas) {
+        canvas.requestPointerLock();
+      }
+    } catch (_) {}
+  }
+
+  function exitGamePointerLock() {
+    try {
+      if (document.exitPointerLock && document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    } catch (_) {}
   }
 
   function resize() {
@@ -372,22 +484,22 @@
     return Math.hypot(x2 - x1, y2 - y1);
   }
 
-  function pickUniqueBotName() {
-    const used = new Set(entities.filter(e => e.alive).map(e => e.name));
-    const available = BOT_NAME_POOL.filter(n => !used.has(n));
-    if (available.length > 0) {
-      return available[Math.floor(Math.random() * available.length)];
+  function randomBotName(tier) {
+    if (tier && tier.names && tier.names.length) {
+      return tier.names[Math.floor(Math.random() * tier.names.length)];
     }
-    return `Wrecker${Math.floor(10 + Math.random() * 89)}`;
+    const idx = Math.floor(Math.random() * BOT_NAME_POOL.length);
+    return BOT_NAME_POOL[idx];
   }
 
+  // Anti-congestion safe spawn spread across the vast 8500px arena
   function findSafeSpawn() {
     let bestX = 0;
     let bestY = 0;
     let bestMinDist = -1;
 
-    for (let i = 0; i < 20; i++) {
-      const r = Math.sqrt(Math.random()) * (WORLD_RADIUS - 320);
+    for (let i = 0; i < 45; i++) {
+      const r = (0.15 + 0.80 * Math.sqrt(Math.random())) * (WORLD_RADIUS - 800);
       const a = Math.random() * Math.PI * 2;
       const cx = Math.cos(a) * r;
       const cy = Math.sin(a) * r;
@@ -398,6 +510,10 @@
         const d1 = dist(cx, cy, e.x, e.y);
         const d2 = dist(cx, cy, e.bx, e.by);
         minD = Math.min(minD, d1, d2);
+      }
+
+      if (minD > 1800) {
+        return { x: cx, y: cy };
       }
 
       if (minD > bestMinDist) {
@@ -411,11 +527,12 @@
 
   // ═══ WRECKER ENTITY (PLAYER OR BOT) ═══
   class Wrecker {
-    constructor({ name, skin, isBot = false, initialScore = 0 }) {
+    constructor({ name, skin, isBot = false, initialScore = 0, iq = null }) {
       this.id = nextId++;
       this.name = name;
       this.skin = skin;
       this.isBot = isBot;
+      this.iq = iq || (isBot ? BOT_IQ_TIERS.MED : null);
 
       const sp = findSafeSpawn();
       this.x = sp.x;
@@ -430,17 +547,6 @@
       this.alive = true;
       this.shieldTimer = isBot ? 1.4 : 2.4;
 
-      // 1-Hit Energy Shield Armor (Recharges after 12s without damage)
-      this.hasShield = true;
-      this.shieldRechargeTimer = 0;
-      this.shieldRechargeMax = 12;
-      this.shieldGraceTimer = 0; // 0.65s invulnerable grace window after shield breaks
-
-      // Dynamic Chain Length (Reach control via Scroll Wheel: 0.65x - 1.45x)
-      this.chainLengthFactor = 1.0;
-      this.activeChainFactor = 1.0;
-      this.snapWhipTension = 0; // Visual kinetic tell when reversing spin
-
       // Boost & Instant Juke-Dodge
       this.boostEnergy = 100;
       this.boosting = false;
@@ -449,48 +555,60 @@
       this.jukeTimer = 0;
       this.closeCallCooldown = 0;
 
+      // Energy Shield (1-Hit protection against lethal flails!)
+      this.hasShield = true;
+      this.shieldRechargeTimer = 0;
+      this.shieldGraceTimer = 0;
+
+      // Elastic Chain & Centrifugal Momentum Physics
+      this.elasticChainFactor = 1.0;
+      this.prevVx = 0;
+      this.prevVy = 0;
+
       // Core size
       this.coreRadius = 21;
 
-      // Wrecking Ball State (Real tethered momentum physics!)
+      // Wrecking Ball State
       this.ballRadius = this.calcBallRadius();
       this.chainLen = this.calcChainLen();
       const startAngle = this.facing + Math.PI;
       this.bx = this.x + Math.cos(startAngle) * this.chainLen;
       this.by = this.y + Math.sin(startAngle) * this.chainLen;
-      this.bvx = -Math.sin(startAngle) * 140;
-      this.bvy = Math.cos(startAngle) * 140;
+      this.bvx = -Math.sin(startAngle) * 160;
+      this.bvy = Math.cos(startAngle) * 160;
       this.ballSpin = 0;
       this.ballSpeed = 0;
-      this.spinCmd = 0;
       this.ballTrail = [];
 
       // Streak tracking
       this.streakCount = 0;
       this.streakTimer = 0;
 
-      // Bot AI
+      // Bot Sector Roaming (anti-congestion patrol target)
+      const roamR = 1400 + Math.random() * (WORLD_RADIUS - 2200);
+      const roamA = Math.random() * Math.PI * 2;
+      this.roamTargetX = Math.cos(roamA) * roamR;
+      this.roamTargetY = Math.sin(roamA) * roamR;
+
       this.aiTimer = 0;
-      this.aiAngle = Math.random() * Math.PI * 2;
+      this.aiReactionTimer = Math.random() * (this.iq ? this.iq.reactionMax : 0.25);
+      this.aiLastResult = { dx: Math.cos(this.facing), dy: Math.sin(this.facing), boost: false };
       this.aiOrbitDir = Math.random() < 0.5 ? 1 : -1;
-      this.aiAggro = 0.35 + Math.random() * 0.6;
+      this.aiAggro = this.iq ? (this.iq.id === 'EXTREME' ? 0.95 : this.iq.id === 'HIGH' ? 0.80 : this.iq.id === 'MED' ? 0.55 : 0.35) : 0.5;
     }
 
+    // Slow, progressive, grindable power-curve scaling (like Slither.io)
     calcBallRadius() {
-      return 22 + Math.min(72, Math.sqrt(Math.max(0, this.score)) * 2.15);
+      const score = Math.max(0, this.score);
+      return 22 + Math.min(270, Math.pow(score, 0.38) * 1.85);
     }
 
     calcChainLen() {
-      const base = 98 + (this.ballRadius - 22) * 1.38;
-      return base * this.activeChainFactor;
+      return 115 + (this.ballRadius - 22) * 1.35;
     }
 
-    adjustChain(delta) {
-      const prev = this.chainLengthFactor;
-      this.chainLengthFactor = clamp(this.chainLengthFactor + delta, 0.65, 1.45);
-      if (this === player && Math.abs(prev - this.chainLengthFactor) > 0.01) {
-        sfx.chainAdjust();
-      }
+    calcCoreRadius() {
+      return 21 + Math.min(24, (this.ballRadius - 22) * 0.09);
     }
 
     getSizeMult() {
@@ -507,9 +625,9 @@
       if (mult > this.peakMult) this.peakMult = mult;
     }
 
-    update(dt, desiredDirX, desiredDirY, wantsBoost, spinCmd = 0) {
+    // Pure mouse dragging flail update (no LMB/RMB spin)
+    update(dt, desiredDirX, desiredDirY, wantsBoost) {
       if (!this.alive) return;
-      this.spinCmd = spinCmd;
 
       if (this.shieldTimer > 0) this.shieldTimer = Math.max(0, this.shieldTimer - dt);
       if (this.shieldGraceTimer > 0) this.shieldGraceTimer = Math.max(0, this.shieldGraceTimer - dt);
@@ -520,24 +638,23 @@
         if (this.streakTimer <= 0) this.streakCount = 0;
       }
 
-      // Auto-recharge energy shield after 12s
+      // Energy shield auto-recharge (10 seconds without taking damage)
       if (!this.hasShield) {
-        this.shieldRechargeTimer += dt;
-        if (this.shieldRechargeTimer >= this.shieldRechargeMax) {
+        this.shieldRechargeTimer -= dt;
+        if (this.shieldRechargeTimer <= 0) {
           this.hasShield = true;
-          this.shieldRechargeTimer = 0;
           if (this === player && mode === 'playing') {
-            addFloatingText(this.x, this.y - 28, '🛡️ SHIELD RESTORED!', '#38bdf8', 20);
-            sfx.pickup(12);
+            sfx.shieldRestore();
+            addFloatingText(this.x, this.y - 32, 'SHIELD RESTORED! 🛡️', '#38bdf8', 19);
           }
         }
       }
 
-      // Smoothly grow ball & dynamic chain reach
-      this.activeChainFactor = lerp(this.activeChainFactor, this.chainLengthFactor, Math.min(1, dt * 7));
+      // Smoothly grow ball & chain & core
       const targetBallR = this.calcBallRadius();
-      this.ballRadius = lerp(this.ballRadius, targetBallR, Math.min(1, dt * 6));
-      this.chainLen = lerp(this.chainLen, this.calcChainLen(), Math.min(1, dt * 6));
+      this.ballRadius = lerp(this.ballRadius, targetBallR, Math.min(1, dt * 5));
+      this.chainLen = lerp(this.chainLen, this.calcChainLen(), Math.min(1, dt * 5));
+      this.coreRadius = lerp(this.coreRadius, this.calcCoreRadius(), Math.min(1, dt * 4));
 
       // Boost resource
       if (this.boostExhausted && this.boostEnergy > 18) {
@@ -549,14 +666,24 @@
       const nx = mag > 0.05 ? desiredDirX / mag : Math.cos(this.facing);
       const ny = mag > 0.05 ? desiredDirY / mag : Math.sin(this.facing);
 
-      // Instant Juke-Dash on fresh boost tap (makes dodging feel razor-sharp!)
-      if (this.boosting && !this.wasBoosting && this.boostEnergy >= 8) {
-        this.jukeTimer = 0.18;
-        this.vx = nx * 680;
-        this.vy = ny * 680;
-        this.boostEnergy = Math.max(0, this.boostEnergy - 8);
-        if (!this.isBot) {
-          spawnShockwave(this.x, this.y, 48, '#38bdf8');
+      // Instant Juke-Dash on fresh boost tap
+      if (this.boosting && !this.wasBoosting && this.boostEnergy >= 10) {
+        this.jukeTimer = 0.24;
+        this.vx = nx * 780;
+        this.vy = ny * 780;
+        this.boostEnergy = Math.max(0, this.boostEnergy - 9);
+        spawnShockwave(this.x, this.y, 56, '#38bdf8');
+        for (let i = 0; i < 5; i++) {
+          particles.push({
+            x: this.x + (Math.random() - 0.5) * 14,
+            y: this.y + (Math.random() - 0.5) * 14,
+            vx: -nx * (180 + Math.random() * 120),
+            vy: -ny * (180 + Math.random() * 120),
+            r: 5 + Math.random() * 4,
+            color: '#38bdf8',
+            life: 0.26,
+            maxLife: 0.26
+          });
         }
       }
       this.wasBoosting = this.boosting;
@@ -568,17 +695,25 @@
         this.boostEnergy = Math.min(100, this.boostEnergy + dt * 28);
       }
 
-      // 1. Snappy Core movement (high grip, zero ice-skating, tiny penalty when huge)
-      const sizeSlowdown = 1 - Math.min(0.16, (this.ballRadius - 22) / 450);
-      const jukeBonus = this.jukeTimer > 0 ? 150 : 0;
-      const maxSpeed = ((this.boosting ? 520 : 355) + jukeBonus) * sizeSlowdown;
+      // 1. Snappy Core movement (ultra-high grip, instant response)
+      const sizeSlowdown = 1 - Math.min(0.20, (this.ballRadius - 22) / 800);
+      const jukeBonus = this.jukeTimer > 0 ? 240 : 0;
+      const maxSpeed = ((this.boosting ? 560 : 390) + jukeBonus) * sizeSlowdown;
       const throttle = clamp(mag, 0.45, 1);
 
       const targetVx = nx * maxSpeed * throttle;
       const targetVy = ny * maxSpeed * throttle;
-      const accel = this.boosting ? 24 : 18;
+      const accel = this.boosting ? 28 : 22;
       this.vx = lerp(this.vx, targetVx, Math.min(1, dt * accel));
       this.vy = lerp(this.vy, targetVy, Math.min(1, dt * accel));
+
+      // Core acceleration transfer (whip momentum transfer directly onto the ball!)
+      const coreAccX = (this.vx - this.prevVx) / Math.max(0.001, dt);
+      const coreAccY = (this.vy - this.prevVy) / Math.max(0.001, dt);
+      this.prevVx = this.vx;
+      this.prevVy = this.vy;
+      this.bvx += coreAccX * 0.52 * dt;
+      this.bvy += coreAccY * 0.52 * dt;
 
       this.x += this.vx * dt;
       this.y += this.vy * dt;
@@ -594,7 +729,6 @@
         const ang = Math.atan2(this.y, this.x);
         this.x = Math.cos(ang) * maxCoreDist;
         this.y = Math.sin(ang) * maxCoreDist;
-        // Reflect outward velocity
         const dot = this.vx * Math.cos(ang) + this.vy * Math.sin(ang);
         if (dot > 0) {
           this.vx -= 1.5 * dot * Math.cos(ang);
@@ -616,18 +750,20 @@
         });
       }
 
-      // 2. WRECKING BALL MOTORIZED + PENDULUM PHYSICS
-      // Light drag so ball coasts smoothly when released
-      const drag = Math.pow(spinCmd !== 0 ? 0.995 : 0.986, dt * 60);
+      // 2. FAST STRING MOMENTUM & CENTRIFUGAL WHIP PHYSICS
+      // Very light drag so the flail retains snappy rotational momentum on drags
+      const drag = Math.pow(0.996, dt * 60);
       this.bvx *= drag;
       this.bvy *= drag;
 
-      const activeChainLen = this.chainLen;
+      // Elastic chain stretch under centrifugal speed
+      const currentBallSpd = Math.hypot(this.bvx, this.bvy);
+      const stretchRatio = clamp(currentBallSpd / 950, 0, 1);
+      const targetStretch = 1.0 + stretchRatio * 0.12;
+      this.elasticChainFactor = lerp(this.elasticChainFactor, targetStretch, Math.min(1, dt * 8));
+      const activeChainLen = this.chainLen * this.elasticChainFactor;
 
-      // Compute radial & tangent vectors from core -> ball
-      // In screen coords (+x right, +y down):
-      // (+tx, +ty) = (-uy, ux) is CLOCKWISE (RMB, spinCmd = +1)
-      // (-tx, -ty) = (uy, -ux) is ANTICLOCKWISE (LMB, spinCmd = -1)
+      // Vectors from core -> ball
       let rx = this.bx - this.x;
       let ry = this.by - this.y;
       let rDist = Math.hypot(rx, ry) || 0.001;
@@ -636,71 +772,50 @@
       let tx = -uy;
       let ty = ux;
 
-      // Relative velocity of ball vs core along tangent
-      const relVx = this.bvx - this.vx;
-      const relVy = this.bvy - this.vy;
-      const tangVel = relVx * tx + relVy * ty;
-
-      // Motorized LMB (Anticlockwise) / RMB (Clockwise) Spin Control!
-      if (spinCmd !== 0) {
-        const targetTangSpeed = this.boosting ? 880 : 760;
-        const desiredTang = spinCmd * targetTangSpeed;
-        const isReversing = tangVel * spinCmd < 0;
-        this.snapWhipTension = isReversing ? 1.0 : Math.max(0, this.snapWhipTension - dt * 3.5);
-
-        // Extra snap-brake torque when reversing direction so fake-outs feel instant!
-        const torque = (isReversing ? 2900 : 1850) * dt;
-        const delta = desiredTang - tangVel;
-        const step = clamp(delta, -torque, torque);
-        this.bvx += tx * step;
-        this.bvy += ty * step;
-
-        // Gentle outward centrifugal push so spinning while standing still whips cleanly!
-        if (rDist < activeChainLen * 0.96) {
-          this.bvx += ux * 520 * dt;
-          this.bvy += uy * 520 * dt;
-        }
-      } else if (Math.abs(tangVel) < 75) {
-        // Gentle ambient sway when coasting freely
-        const spinSign = tangVel >= 0 ? 1 : -1;
-        this.bvx += tx * spinSign * 95 * dt;
-        this.bvy += ty * spinSign * 95 * dt;
-      }
+      // Centrifugal whip pumping: core moving tangentially relative to the ball pumps angular momentum into the ball!
+      const coreTangSpeed = (this.vx * tx + this.vy * ty);
+      const whipPump = coreTangSpeed * 3.2 * dt;
+      this.bvx += tx * whipPump;
+      this.bvy += ty * whipPump;
 
       // Integrate ball position
       this.bx += this.bvx * dt;
       this.by += this.bvy * dt;
 
-      // Enforce chain tether constraint (preserve tangential momentum!)
+      // Enforce chain tether constraint with elastic sling
       rx = this.bx - this.x;
       ry = this.by - this.y;
       rDist = Math.hypot(rx, ry) || 0.001;
       ux = rx / rDist;
       uy = ry / rDist;
+      tx = -uy;
+      ty = ux;
 
       if (rDist > activeChainLen) {
-        // Snap ball back to chain radius
-        this.bx = this.x + ux * activeChainLen;
-        this.by = this.y + uy * activeChainLen;
+        const overflow = rDist - activeChainLen;
+        this.bx -= ux * overflow * 0.90;
+        this.by -= uy * overflow * 0.90;
 
-        // Remove outward radial velocity relative to core (taut chain yank!)
-        const newRelVx = this.bvx - this.vx;
-        const newRelVy = this.bvy - this.vy;
-        const radialVel = newRelVx * ux + newRelVy * uy;
+        const relVx = this.bvx - this.vx;
+        const relVy = this.bvy - this.vy;
+        const radialVel = relVx * ux + relVy * uy;
         if (radialVel > 0) {
-          this.bvx -= ux * radialVel * 1.04;
-          this.bvy -= uy * radialVel * 1.04;
+          this.bvx -= ux * radialVel * 0.92;
+          this.bvy -= uy * radialVel * 0.92;
+          // Angular sling transfer on tension stretch
+          const tangSpeed = relVx * tx + relVy * ty;
+          this.bvx += tx * (tangSpeed * 0.08);
+          this.bvy += ty * (tangSpeed * 0.08);
         }
-      } else if (rDist < this.coreRadius + this.ballRadius + 10) {
-        // Keep ball from sitting right on top of core
-        const minR = this.coreRadius + this.ballRadius + 10;
+      } else if (rDist < this.coreRadius + this.ballRadius + 8) {
+        const minR = this.coreRadius + this.ballRadius + 8;
         this.bx = this.x + ux * minR;
         this.by = this.y + uy * minR;
       }
 
-      // Clamp insane ball speeds for crisp, dodgeable playability
+      // Ball speed cap (raised for fast high-momentum whip drags)
       this.ballSpeed = Math.hypot(this.bvx, this.bvy);
-      const maxBallSpeed = this.boosting ? 1020 : 820;
+      const maxBallSpeed = this.boosting ? 1420 : 1180;
       if (this.ballSpeed > maxBallSpeed) {
         const sc = maxBallSpeed / this.ballSpeed;
         this.bvx *= sc;
@@ -708,7 +823,7 @@
         this.ballSpeed = maxBallSpeed;
       }
 
-      // Keep ball inside arena wall with bouncy metallic ricochet
+      // Arena wall bounce for ball
       const ballArenaDist = Math.hypot(this.bx, this.by);
       const maxBallArenaDist = WORLD_RADIUS - this.ballRadius;
       if (ballArenaDist > maxBallArenaDist) {
@@ -723,47 +838,81 @@
       }
 
       // Visual spin & blazing motion trail
-      this.ballSpin += (0.012 * this.ballSpeed + 1.5) * dt * (tangVel >= 0 ? 1 : -1);
+      const relBallAngSpeed = (this.bvx * tx + this.bvy * ty) / Math.max(1, rDist);
+      this.ballSpin += relBallAngSpeed * dt * 1.4;
 
-      this.ballTrail.unshift({ x: this.bx, y: this.by, r: this.ballRadius, speed: this.ballSpeed });
-      if (this.ballTrail.length > 14) this.ballTrail.pop();
+      if (this.ballTrail.length > 10) this.ballTrail.shift();
+      this.ballTrail.push({ x: this.bx, y: this.by });
     }
   }
 
-  // ═══ SHARDS / LOOT ═══
-  function spawnAmbientShard() {
+  // ═══ SHARDS & LOOT ═══
+  function spawnAmbientShard(isMega = false) {
     const r = Math.sqrt(Math.random()) * (WORLD_RADIUS - 120);
     const a = Math.random() * Math.PI * 2;
-    const isRare = Math.random() < 0.08;
+    const colors = ['#fde047', '#38bdf8', '#4ade80', '#fb923c', '#e879f9', '#a78bfa'];
     shards.push({
       x: Math.cos(a) * r,
       y: Math.sin(a) * r,
       vx: 0,
       vy: 0,
-      value: isRare ? 12 : 4,
-      r: isRare ? 11 : 7,
-      color: isRare ? '#fde047' : ['#38bdf8', '#4ade80', '#fb923c', '#e879f9'][Math.floor(Math.random() * 4)],
+      value: isMega ? 25 : 5,
+      r: isMega ? 13 : 7.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
       pulse: Math.random() * Math.PI * 2,
-      isLoot: false
+      isLoot: isMega,
+      isMega
     });
   }
 
-  function spawnKillLoot(victim) {
-    const count = clamp(Math.floor(8 + Math.sqrt(victim.score) * 1.4), 8, 34);
-    const totalValue = Math.max(40, Math.floor(victim.score * 0.72 + 45));
-    const perShard = Math.max(8, Math.ceil(totalValue / count));
-
+  // Ball burst shattering animation: jagged pieces flying outward
+  function spawnBallBurstFX(x, y, radius, skin) {
+    const count = clamp(Math.floor(20 + radius * 0.22), 22, 38);
     for (let i = 0; i < count; i++) {
-      const ang = (i / count) * Math.PI * 2 + Math.random() * 0.4;
-      const spd = 90 + Math.random() * 240;
+      const ang = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const spd = 160 + Math.random() * 420;
+      const size = 6 + Math.random() * (radius * 0.16 + 6);
+      const life = 0.9 + Math.random() * 0.6;
+      ballFragments.push({
+        x: x + Math.cos(ang) * (radius * 0.4),
+        y: y + Math.sin(ang) * (radius * 0.4),
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        rot: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 12,
+        size,
+        color: i % 2 === 0 ? skin.ballColor : (skin.spikeColor || skin.ballHighlight),
+        edgeColor: skin.ballHighlight || '#ffffff',
+        life,
+        maxLife: life
+      });
+    }
+    spawnShockwave(x, y, radius * 1.8, skin.trailColor || '#fb923c');
+    spawnSparks(x, y, 32, skin.ballHighlight, '#ffffff', 160, 480);
+  }
+
+  // Grouped XP scattering: victim's mass blooms into an organic cluster of radiant XP gems for slow grinding
+  function spawnKillLoot(victim) {
+    const count = clamp(Math.floor(28 + Math.sqrt(victim.score) * 2.6), 35, 65);
+    const totalValue = Math.max(90, Math.floor(victim.score * 0.90 + 70));
+    const perShard = Math.max(4, Math.ceil(totalValue / count));
+
+    const colors = ['#fde047', '#38bdf8', '#4ade80', '#fb923c', '#e879f9', '#a78bfa'];
+    for (let i = 0; i < count; i++) {
+      const ang = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const spd = 70 + Math.random() * 260; // Initial dispersal velocity
+      const originX = (i % 2 === 0) ? victim.bx : victim.x;
+      const originY = (i % 2 === 0) ? victim.by : victim.y;
+      const col = colors[i % colors.length];
+
       shards.push({
-        x: victim.x + (Math.random() - 0.5) * 20,
-        y: victim.y + (Math.random() - 0.5) * 20,
+        x: originX + (Math.random() - 0.5) * 24,
+        y: originY + (Math.random() - 0.5) * 24,
         vx: Math.cos(ang) * spd,
         vy: Math.sin(ang) * spd,
         value: perShard,
-        r: clamp(9 + perShard * 0.14, 9, 16),
-        color: i % 2 === 0 ? '#fde047' : victim.skin.trailColor,
+        r: clamp(7 + perShard * 0.12, 7, 16),
+        color: col,
         pulse: Math.random() * Math.PI * 2,
         isLoot: true
       });
@@ -789,95 +938,156 @@
     }
   }
 
-  function spawnShockwave(x, y, maxR, color) {
-    shockwaves.push({ x, y, r: 10, maxR, color, life: 0.32, maxLife: 0.32 });
-  }
-
-  function addFloatingText(x, y, text, color = '#fde047', size = 24) {
-    floatingTexts.push({ x, y, text, color, size, life: 1.05, maxLife: 1.05 });
-  }
-
-  function pushKillFeed(killerName, victimName, involvesMe) {
-    const el = document.createElement('div');
-    el.className = 'kill-item' + (involvesMe ? ' is-me' : '');
-    el.innerHTML = `<span class="killer">${escapeHtml(killerName)}</span><span class="verb">SMASHED</span><span class="victim">${escapeHtml(victimName)}</span>`;
-    killFeed.prepend(el);
-    while (killFeed.children.length > 3) {
-      killFeed.removeChild(killFeed.lastChild);
+  function spawnShieldBreakFX(x, y) {
+    for (let i = 0; i < 28; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 120 + Math.random() * 320;
+      const life = 0.35 + Math.random() * 0.3;
+      particles.push({
+        x: x + (Math.random() - 0.5) * 12,
+        y: y + (Math.random() - 0.5) * 12,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        r: 3 + Math.random() * 5,
+        color: Math.random() < 0.65 ? '#38bdf8' : '#ffffff',
+        life,
+        maxLife: life
+      });
     }
-    setTimeout(() => {
-      if (el.parentNode) el.remove();
-    }, 3600);
+    spawnShockwave(x, y, 75, '#38bdf8');
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function spawnShockwave(x, y, maxR, color) {
+    shockwaves.push({
+      x,
+      y,
+      r: 10,
+      maxR,
+      color,
+      life: 0.28,
+      maxLife: 0.28
+    });
   }
 
-  // ═══ BOT AI (ACTUALLY WHIPS & HUNTS!) ═══
+  function addFloatingText(x, y, text, color, size = 20) {
+    floatingTexts.push({
+      x,
+      y,
+      text,
+      color,
+      size,
+      life: 0.85,
+      maxLife: 0.85
+    });
+  }
+
+  // ═══ BOT AI WITH SECTOR PATROLLING (ANTI-CONGESTION) ═══
   function computeBotInput(bot, dt) {
     bot.aiTimer -= dt;
+    bot.aiReactionTimer -= dt;
+    const iq = bot.iq || BOT_IQ_TIERS.MED;
 
-    // 1. Urgent arena wall avoidance
+    // 1. Arena perimeter boundary avoidance
     const dCenter = Math.hypot(bot.x, bot.y);
-    if (dCenter > WORLD_RADIUS - 260) {
+    if (dCenter > WORLD_RADIUS - 380) {
       const inAng = Math.atan2(-bot.y, -bot.x);
-      return { dx: Math.cos(inAng), dy: Math.sin(inAng), boost: false };
+      bot.aiLastResult = { dx: Math.cos(inAng), dy: Math.sin(inAng), boost: false };
+      return bot.aiLastResult;
     }
 
-    // 2. Dodge incoming enemy wrecking balls!
+    // Human perception latency per IQ tier
+    if (bot.aiReactionTimer > 0 && bot.aiLastResult) {
+      return bot.aiLastResult;
+    }
+    bot.aiReactionTimer = iq.reactionMin + Math.random() * (iq.reactionMax - iq.reactionMin);
+
+    // 2. Evaluate incoming ball threats
     let fleeX = 0;
     let fleeY = 0;
     let danger = 0;
     let nearestPrey = null;
-    let nearestPreyDist = 520;
+    let nearestPreyDist = iq.visionRange;
 
     for (const other of entities) {
       if (!other.alive || other.id === bot.id) continue;
 
-      // Danger from enemy ball
       const db = dist(bot.x, bot.y, other.bx, other.by);
-      const safeD = other.ballRadius + bot.coreRadius + 115;
-      if (db < safeD) {
-        const w = (1 - db / safeD) * 3.5;
-        fleeX += ((bot.x - other.bx) / (db || 1)) * w;
-        fleeY += ((bot.y - other.by) / (db || 1)) * w;
-        danger += w;
+      const safeD = other.ballRadius + bot.coreRadius + (iq.id === 'EXTREME' ? 140 : 105);
+      if (db < safeD && other.ballSpeed > 180) {
+        const dot = other.bvx * (bot.x - other.bx) + other.bvy * (bot.y - other.by);
+        if (dot > 0) {
+          const w = (1 - db / safeD) * (iq.id === 'LOW' ? 2.0 : 3.2);
+          fleeX += ((bot.x - other.bx) / (db || 1)) * w;
+          fleeY += ((bot.y - other.by) / (db || 1)) * w;
+          danger += w;
+        }
       }
 
-      // Potential prey core
+      // Prey check
       if (other.shieldTimer <= 0) {
         const dc = dist(bot.x, bot.y, other.x, other.y);
-        if (dc < nearestPreyDist) {
-          nearestPreyDist = dc;
-          nearestPrey = other;
+        if (dc < iq.visionRange) {
+          const toOtherAng = Math.atan2(other.y - bot.y, other.x - bot.x);
+          let angDiff = Math.abs(toOtherAng - bot.facing);
+          while (angDiff > Math.PI) angDiff = Math.abs(angDiff - Math.PI * 2);
+
+          const inVision = dc < 170 || iq.visionCone >= Math.PI * 2 || angDiff < (iq.visionCone * 0.5);
+          if (inVision) {
+            if (other === player && globalPlayerHunterId && globalPlayerHunterId !== bot.id) {
+              continue;
+            }
+            if (dc < nearestPreyDist) {
+              nearestPreyDist = dc;
+              nearestPrey = other;
+            }
+          }
         }
       }
     }
 
-    if (danger > 0.65) {
-      return { dx: fleeX, dy: fleeY, boost: danger > 1.7 && bot.boostEnergy > 35 };
+    if (nearestPrey === player) {
+      globalPlayerHunterId = bot.id;
+    } else if (globalPlayerHunterId === bot.id) {
+      globalPlayerHunterId = null;
     }
 
-    // 3. Hunt prey by orbiting at chain distance to whip ball into their core!
-    if (nearestPrey && nearestPreyDist < bot.chainLen * 2.1 + 120 && bot.aiAggro > 0.42) {
-      const toPreyAng = Math.atan2(nearestPrey.y - bot.y, nearestPrey.x - bot.x);
-      // Orbit slightly tangentially so the wrecking ball whips straight through their core
-      const idealDist = bot.chainLen * 0.92;
-      const angleOffset = nearestPreyDist > idealDist ? 0.45 * bot.aiOrbitDir : 1.15 * bot.aiOrbitDir;
+    if (danger > iq.dangerThreshold) {
+      const canJuke = iq.canJukeDash && danger > 1.6 && bot.boostEnergy > 35;
+      bot.aiLastResult = { dx: fleeX, dy: fleeY, boost: canJuke };
+      return bot.aiLastResult;
+    }
+
+    // 3. Hunt prey with predictive leading & body-drag whipping
+    if (nearestPrey && nearestPreyDist < bot.chainLen * 2.1 + 100 && bot.aiAggro > 0.30) {
+      let aimX = nearestPrey.x;
+      let aimY = nearestPrey.y;
+      if (iq.id === 'EXTREME' || iq.id === 'HIGH') {
+        const leadFactor = clamp(nearestPreyDist / Math.max(220, bot.ballSpeed + 180), 0.08, 0.38);
+        aimX += nearestPrey.vx * leadFactor;
+        aimY += nearestPrey.vy * leadFactor;
+      }
+
+      const toPreyAng = Math.atan2(aimY - bot.y, aimX - bot.x);
+      const idealDist = bot.chainLen * 0.95;
+      const noise = (Math.random() - 0.5) * iq.aimNoise;
+      const angleOffset = (nearestPreyDist > idealDist ? 0.38 : iq.orbitOffset) * bot.aiOrbitDir + noise;
       const steerAng = toPreyAng + angleOffset;
-      const shouldWhip = nearestPreyDist < bot.chainLen * 1.45 && bot.boostEnergy > 30;
-      return { dx: Math.cos(steerAng), dy: Math.sin(steerAng), boost: shouldWhip };
+
+      const shouldWhip = nearestPreyDist < bot.chainLen * 1.40 && bot.boostEnergy > 30 && Math.random() < iq.whipProb;
+      bot.aiLastResult = { dx: Math.cos(steerAng), dy: Math.sin(steerAng), boost: shouldWhip };
+      return bot.aiLastResult;
     }
 
-    // 4. Seek high-value loot or nearby shards
+    // 4. Seek nearby loot shards or grouped XP
     let bestShard = null;
     let bestScore = 0;
+    const searchRange = iq.id === 'LOW' ? 520 : 440;
     for (let i = 0; i < shards.length; i++) {
       const s = shards[i];
       const d = dist(bot.x, bot.y, s.x, s.y);
-      if (d > 480) continue;
-      const weight = (s.isLoot ? s.value * 4 : s.value) / (d + 30);
+      if (d > searchRange) continue;
+      const lootWeight = s.isLoot ? s.value * (iq.id === 'EXTREME' ? 5.0 : 3.5) : s.value * iq.lootDesire;
+      const weight = lootWeight / (d + 25);
       if (weight > bestScore) {
         bestScore = weight;
         bestShard = s;
@@ -886,19 +1096,45 @@
 
     if (bestShard) {
       const ang = Math.atan2(bestShard.y - bot.y, bestShard.x - bot.x);
-      return {
+      bot.aiLastResult = {
         dx: Math.cos(ang),
         dy: Math.sin(ang),
-        boost: bestShard.isLoot && bot.boostEnergy > 50
+        boost: bestShard.isLoot && bot.boostEnergy > 50 && (iq.id === 'HIGH' || iq.id === 'EXTREME')
       };
+      return bot.aiLastResult;
     }
 
-    // 5. Cruise smoothly
-    if (bot.aiTimer <= 0) {
-      bot.aiAngle += (Math.random() - 0.5) * 1.4;
-      bot.aiTimer = 0.8 + Math.random() * 1.5;
+    // 5. Anti-congestion Sector Roaming (Patrol distinct sectors across 8500px arena)
+    const dRoam = dist(bot.x, bot.y, bot.roamTargetX, bot.roamTargetY);
+    if (dRoam < 600 || bot.aiTimer <= 0) {
+      const roamR = 1400 + Math.random() * (WORLD_RADIUS - 2200);
+      const roamA = Math.random() * Math.PI * 2;
+      bot.roamTargetX = Math.cos(roamA) * roamR;
+      bot.roamTargetY = Math.sin(roamA) * roamR;
+      bot.aiTimer = 8 + Math.random() * 8;
     }
-    return { dx: Math.cos(bot.aiAngle), dy: Math.sin(bot.aiAngle), boost: false };
+
+    const roamAng = Math.atan2(bot.roamTargetY - bot.y, bot.roamTargetX - bot.x);
+    bot.aiLastResult = { dx: Math.cos(roamAng), dy: Math.sin(roamAng), boost: false };
+    return bot.aiLastResult;
+  }
+
+  function pickBotTier() {
+    const roll = Math.random();
+    if (roll < 0.13) return BOT_IQ_TIERS.EXTREME; // 13% Titan Bosses
+    if (roll < 0.35) return BOT_IQ_TIERS.HIGH;    // 22% Elite Hunters
+    if (roll < 0.72) return BOT_IQ_TIERS.MED;     // 37% Veterans
+    return BOT_IQ_TIERS.LOW;                      // 28% Rookies
+  }
+
+  function getScoreForTier(tier) {
+    switch (tier.id) {
+      case 'EXTREME': return 750 + Math.floor(Math.random() * 850);
+      case 'HIGH':    return 240 + Math.floor(Math.random() * 320);
+      case 'MED':     return 60 + Math.floor(Math.random() * 140);
+      case 'LOW':
+      default:        return Math.floor(Math.random() * 45);
+    }
   }
 
   // ═══ INITIALIZE WORLD ═══
@@ -906,110 +1142,99 @@
     entities.length = 0;
     shards.length = 0;
     particles.length = 0;
+    ballFragments.length = 0;
     shockwaves.length = 0;
     floatingTexts.length = 0;
 
-    for (let i = 0; i < TARGET_SHARDS; i++) spawnAmbientShard();
+    // Populate food & ambient mass
+    for (let i = 0; i < TARGET_SHARDS; i++) {
+      spawnAmbientShard(Math.random() < 0.08);
+    }
 
+    // Spawn AI bots with IQ tiers
     for (let i = 0; i < BOT_COUNT; i++) {
-      // Varied starting mass so there are big Bosses & small targets immediately!
-      const tier = Math.random();
-      const startScore = tier < 0.12 ? 320 + Math.random() * 340
-        : tier < 0.40 ? 90 + Math.random() * 170
-        : Math.random() * 55;
+      const tier = pickBotTier();
+      const skin = SKINS[Math.floor(Math.random() * SKINS.length)];
       const bot = new Wrecker({
-        name: pickUniqueBotName(),
-        skin: SKINS[Math.floor(Math.random() * SKINS.length)],
+        name: randomBotName(tier),
+        skin,
         isBot: true,
-        initialScore: Math.floor(startScore)
+        initialScore: getScoreForTier(tier),
+        iq: tier
       });
       entities.push(bot);
     }
   }
 
   function maintainPopulation() {
-    let botCount = 0;
-    for (let i = entities.length - 1; i >= 0; i--) {
-      if (!entities[i].alive) {
-        entities.splice(i, 1);
-      } else if (entities[i].isBot) {
-        botCount++;
-      }
+    // Respawn dead bots if count dips
+    let aliveBots = 0;
+    for (const e of entities) {
+      if (e.isBot && e.alive) aliveBots++;
     }
-
-    while (botCount < BOT_COUNT) {
+    if (aliveBots < BOT_COUNT) {
+      const tier = pickBotTier();
+      const skin = SKINS[Math.floor(Math.random() * SKINS.length)];
       const bot = new Wrecker({
-        name: pickUniqueBotName(),
-        skin: SKINS[Math.floor(Math.random() * SKINS.length)],
+        name: randomBotName(tier),
+        skin,
         isBot: true,
-        initialScore: Math.floor(Math.random() * 45)
+        initialScore: getScoreForTier(tier),
+        iq: tier
       });
       entities.push(bot);
-      botCount++;
     }
 
+    // Maintain shard count
     while (shards.length < TARGET_SHARDS) {
-      spawnAmbientShard();
+      spawnAmbientShard(Math.random() < 0.06);
     }
   }
 
   // ═══ COMBAT & COLLISIONS ═══
   function resolveCollisions() {
-    const alive = entities.filter(e => e.alive);
+    const aliveEntities = entities.filter(e => e.alive);
 
-    // 1. Ball-vs-Ball METALLIC CLASH!
-    for (let i = 0; i < alive.length; i++) {
-      const a = alive[i];
-      for (let j = i + 1; j < alive.length; j++) {
-        const b = alive[j];
-        const dx = b.bx - a.bx;
-        const dy = b.by - a.by;
-        const d = Math.hypot(dx, dy) || 0.001;
-        const minD = a.ballRadius + b.ballRadius;
+    // 1. Ball vs Ball Ricochet
+    for (let i = 0; i < aliveEntities.length; i++) {
+      const a = aliveEntities[i];
+      for (let j = i + 1; j < aliveEntities.length; j++) {
+        const b = aliveEntities[j];
+        const d = dist(a.bx, a.by, b.bx, b.by);
+        const minDist = a.ballRadius + b.ballRadius;
+        if (d < minDist && d > 0.001) {
+          const overlap = minDist - d;
+          const nx = (b.bx - a.bx) / d;
+          const ny = (b.by - a.by) / d;
 
-        if (d < minD) {
-          const nx = dx / d;
-          const ny = dy / d;
-          const overlap = minD - d;
+          a.bx -= nx * overlap * 0.5;
+          a.by -= ny * overlap * 0.5;
+          b.bx += nx * overlap * 0.5;
+          b.by += ny * overlap * 0.5;
 
-          const mA = a.getBallMass();
-          const mB = b.getBallMass();
-          const invSum = 1 / (mA + mB);
+          const massA = a.getBallMass();
+          const massB = b.getBallMass();
+          const totalMass = massA + massB;
 
-          // Separate balls weighted by mass
-          a.bx -= nx * overlap * (mB * invSum);
-          a.by -= ny * overlap * (mB * invSum);
-          b.bx += nx * overlap * (mA * invSum);
-          b.by += ny * overlap * (mA * invSum);
+          const relVx = b.bvx - a.bvx;
+          const relVy = b.bvy - a.bvy;
+          const normVel = relVx * nx + relVy * ny;
 
-          // Elastic clang impulse
-          const rvx = b.bvx - a.bvx;
-          const rvy = b.bvy - a.bvy;
-          const velAlongNormal = rvx * nx + rvy * ny;
+          if (normVel < 0) {
+            const restitution = 1.35;
+            const impulse = -(1 + restitution) * normVel / (1 / massA + 1 / massB);
+            a.bvx -= (impulse / massA) * nx;
+            a.bvy -= (impulse / massA) * ny;
+            b.bvx += (impulse / massB) * nx;
+            b.bvy += (impulse / massB) * ny;
 
-          if (velAlongNormal < 0) {
-            const restitution = 1.05;
-            const impulse = -(1 + restitution) * velAlongNormal / (1 / mA + 1 / mB);
-            a.bvx -= (impulse / mA) * nx;
-            a.bvy -= (impulse / mA) * ny;
-            b.bvx += (impulse / mB) * nx;
-            b.bvy += (impulse / mB) * ny;
-
-            // Clash point sparks & metallic clang audio
-            const cx = a.bx + nx * a.ballRadius;
-            const cy = a.by + ny * a.ballRadius;
-            const impact = Math.min(1, Math.abs(velAlongNormal) / 550);
-
-            if (impact > 0.12) {
-              spawnSparks(cx, cy, Math.floor(8 + impact * 14), '#ffffff', '#fbbf24', 140, 440);
-              spawnShockwave(cx, cy, 40 + impact * 45, '#fde047');
-
-              const nearCam = dist(cx, cy, camera.x, camera.y) < 900;
-              if (nearCam && mode === 'playing') {
-                sfx.clang(impact);
-                if (a === player || b === player) {
-                  shake = Math.max(shake, 4 + impact * 9);
-                }
+            const impactSpeed = Math.abs(normVel);
+            if (impactSpeed > 160) {
+              const cx = (a.bx + b.bx) * 0.5;
+              const cy = (a.by + b.by) * 0.5;
+              spawnSparks(cx, cy, Math.floor(clamp(impactSpeed / 40, 5, 18)), '#ffffff', '#fb923c', 140, 380);
+              if (dist(cx, cy, camera.x, camera.y) < 700) {
+                sfx.clang(clamp(impactSpeed / 800, 0.2, 1.0));
               }
             }
           }
@@ -1017,150 +1242,75 @@
       }
     }
 
-    // 2. Ball-vs-Core COMBAT (Momentum Damage, 1-Hit Energy Shield & Perfect Dodge!)
-    for (let i = 0; i < alive.length; i++) {
-      const attacker = alive[i];
-      if (!attacker.alive) continue;
+    // 2. Ball vs Enemy Core (Smash / 1-Hit Shield Protection)
+    for (const attacker of aliveEntities) {
+      for (const victim of aliveEntities) {
+        if (attacker.id === victim.id) continue;
+        if (victim.shieldTimer > 0) continue; // Spawn invulnerability
 
-      for (let j = 0; j < alive.length; j++) {
-        if (i === j) continue;
-        const victim = alive[j];
-        if (!victim.alive || victim.shieldTimer > 0) continue;
-
+        const hitDist = attacker.ballRadius + victim.coreRadius;
         const d = dist(attacker.bx, attacker.by, victim.x, victim.y);
-        const killDist = attacker.ballRadius * 0.90 + victim.coreRadius * 0.65;
-        const dx = victim.x - attacker.bx;
-        const dy = victim.y - attacker.by;
-        const nd = Math.hypot(dx, dy) || 0.001;
-        const nx = dx / nd;
-        const ny = dy / nd;
 
-        // Relative impact velocity between attacker ball and victim core
-        const rvx = attacker.bvx - victim.vx;
-        const rvy = attacker.bvy - victim.vy;
-        const impactVel = Math.hypot(rvx, rvy);
-
-        // A. PERFECT DODGE: Dashing right as an incoming lethal ball passes by!
-        if (
-          victim === player &&
-          mode === 'playing' &&
-          victim.jukeTimer > 0 &&
-          victim.closeCallCooldown <= 0 &&
-          attacker.ballSpeed > 300 &&
-          d < killDist + 38
-        ) {
-          victim.closeCallCooldown = 0.8;
-          victim.boostEnergy = 100; // Instant 100% boost refill!
-          victim.addScore(15);
-          sfx.perfectDodge();
-          spawnShockwave(victim.x, victim.y, 65, '#38bdf8');
-          spawnSparks(victim.x, victim.y, 18, '#38bdf8', '#ffffff', 160, 420);
-          addFloatingText(victim.x, victim.y - 30, '⚡ PERFECT DODGE! +100% BOOST', '#38bdf8', 22);
-          hitStopTimer = 0.035;
+        // Near-Miss dodge detection
+        if (victim === player && d > hitDist && d < hitDist + 48 && attacker.ballSpeed > 320) {
+          if (victim.closeCallCooldown <= 0) {
+            victim.closeCallCooldown = 0.8;
+            victim.boostEnergy = Math.min(100, victim.boostEnergy + 22);
+            sfx.pickup(4);
+            addFloatingText(victim.x, victim.y - 28, 'CLOSE CALL! +22⚡', '#38bdf8', 18);
+          }
         }
 
-        // B. BALL-TO-CORE IMPACT
-        if (d < killDist) {
-          // If victim is in post-shield shatter grace period, ignore lethal damage
-          if (victim.shieldGraceTimer > 0) {
-            victim.vx += nx * 140;
-            victim.vy += ny * 140;
+        if (d < hitDist) {
+          if (victim.shieldGraceTimer > 0) continue;
+
+          // 1-Hit Energy Shield Check!
+          if (victim.hasShield) {
+            victim.hasShield = false;
+            victim.shieldRechargeTimer = 10.0;
+            victim.shieldGraceTimer = 0.85; // 0.85s grace immunity after shield breaks
+
+            spawnShieldBreakFX(victim.x, victim.y);
+            sfx.shieldBreak();
+
+            // Heavy kinetic repulsion knocks attacker's ball away
+            const repelAng = Math.atan2(attacker.by - victim.y, attacker.bx - victim.x);
+            attacker.bvx = Math.cos(repelAng) * 620;
+            attacker.bvy = Math.sin(repelAng) * 620;
+
+            if (victim === player && mode === 'playing') {
+              shake = 16;
+              addFloatingText(victim.x, victim.y - 36, 'SHIELD BROKEN! 🛡️💥', '#f87171', 22);
+            } else {
+              addFloatingText(victim.x, victim.y - 36, 'BLOCKED! 🛡️', '#38bdf8', 18);
+            }
             continue;
           }
 
-          if (impactVel < 260) {
-            // TIER 1: LOW-SPEED GLANCE (No cheap kills when barely moving!)
-            victim.vx += nx * 240;
-            victim.vy += ny * 240;
-            attacker.bvx -= nx * 160;
-            attacker.bvy -= ny * 160;
-            spawnSparks(victim.x, victim.y, 6, '#94a3b8', '#ffffff', 100, 220);
-            if (victim === player || attacker === player) {
-              sfx.clang(0.35);
-              addFloatingText(victim.x, victim.y - 24, 'DEFLECTED', '#94a3b8', 16);
-            }
-          } else if (victim.hasShield) {
-            // TIER 2: 1-HIT ENERGY SHIELD ABSORPTION
-            victim.hasShield = false;
-            victim.shieldRechargeTimer = 0;
-            victim.shieldGraceTimer = 0.65; // 0.65s grace window to dash away!
-            victim.boostEnergy = Math.min(100, victim.boostEnergy + 32); // Escape boost!
-
-            victim.vx += nx * 440;
-            victim.vy += ny * 440;
-            attacker.bvx -= nx * 240;
-            attacker.bvy -= ny * 240;
-
-            spawnShockwave(victim.x, victim.y, 75, '#38bdf8');
-            spawnSparks(victim.x, victim.y, 24, '#38bdf8', '#ffffff', 180, 520);
-            sfx.shieldBreak();
-
-            if (attacker === player && mode === 'playing') {
-              shake = Math.max(shake, 14);
-              hitStopTimer = 0.04;
-              addFloatingText(victim.x, victim.y - 28, '🛡️ SHIELD BROKEN!', '#fde047', 24);
-            } else if (victim === player && mode === 'playing') {
-              shake = 16;
-              hitStopTimer = 0.04;
-              addFloatingText(victim.x, victim.y - 28, '⚠️ SHIELD SHATTERED! DASH!', '#38bdf8', 24);
-            }
-          } else {
-            // TIER 3: LETHAL SMASH!
-            handleKill(attacker, victim);
-          }
-        } else if (
-          victim === player &&
-          mode === 'playing' &&
-          victim.closeCallCooldown <= 0 &&
-          attacker.ballSpeed > 260 &&
-          d < killDist + 34
-        ) {
-          // Standard Near-Miss Dodge
-          victim.closeCallCooldown = 0.75;
-          victim.boostEnergy = Math.min(100, victim.boostEnergy + 18);
-          victim.addScore(5);
-          spawnSparks(victim.x, victim.y, 10, '#38bdf8', '#ffffff', 120, 260);
-          addFloatingText(victim.x, victim.y - 26, 'CLOSE CALL! +BOOST', '#38bdf8', 18);
-          sfx.pickup(10);
+          // Unshielded core hit: LETHAL SMASH!
+          handleKill(attacker, victim);
+          return;
         }
       }
     }
 
-    // 3. Shard Collection (Both Core AND Wrecking Ball collect shards!)
-    for (let sIdx = shards.length - 1; sIdx >= 0; sIdx--) {
-      const s = shards[sIdx];
-      let collected = false;
-
-      for (const e of alive) {
-        if (!e.alive) continue;
+    // 3. Shard Collection (both core & ball can collect mass)
+    for (const e of aliveEntities) {
+      for (let sIdx = shards.length - 1; sIdx >= 0; sIdx--) {
+        const s = shards[sIdx];
         const dCore = dist(e.x, e.y, s.x, s.y);
         const dBall = dist(e.bx, e.by, s.x, s.y);
-        const corePull = e.coreRadius + s.r + 22;
-        const ballPull = e.ballRadius + s.r + 12;
 
-        // Magnetic pull into core when close
-        if (dCore < corePull + 36) {
-          s.x = lerp(s.x, e.x, 0.24);
-          s.y = lerp(s.y, e.y, 0.24);
-        }
-
-        if (dCore < corePull || dBall < ballPull) {
+        if (dCore < e.coreRadius + s.r + 10 || dBall < e.ballRadius + s.r + 8) {
           e.addScore(s.value);
-          e.boostEnergy = Math.min(100, e.boostEnergy + (s.isLoot ? 10 : 3.5));
-
           if (e === player && mode === 'playing') {
-            pickupCombo = Math.min(14, pickupCombo + 1);
-            pickupComboTimer = 0.6;
-            sfx.pickup(pickupCombo);
+            pickupCombo++;
+            pickupComboTimer = 0.55;
+            sfx.pickup(clamp(pickupCombo, 1, 14));
           }
-
           shards.splice(sIdx, 1);
-          collected = true;
-          break;
         }
       }
-
-      if (collected) continue;
     }
   }
 
@@ -1173,29 +1323,10 @@
 
     const isGiantSlayer = victim.ballRadius > attacker.ballRadius * 1.35;
     const bonus = isGiantSlayer ? 60 : 25;
+    attacker.addScore(bonus);
 
-    let multiplier = 1.0;
-    let label = 'SMASH!';
-    let col = '#fde047';
-    if (isGiantSlayer) {
-      label = 'GIANT SLAYER! +60';
-      col = '#38bdf8';
-      multiplier = 2.0;
-    } else if (attacker.streakCount === 2) {
-      label = 'DOUBLE SMASH! +50%';
-      col = '#fb923c';
-      multiplier = 1.5;
-    } else if (attacker.streakCount === 3) {
-      label = 'TRIPLE WRECK! +100%';
-      col = '#f43f5e';
-      multiplier = 2.0;
-    } else if (attacker.streakCount >= 4) {
-      label = `UNSTOPPABLE x${attacker.streakCount}! +150%`;
-      col = '#e879f9';
-      multiplier = 2.5;
-    }
-    attacker.addScore(Math.floor(bonus * multiplier));
-
+    // Ball shatter burst animation & grouped XP loot dispersion
+    spawnBallBurstFX(victim.bx, victim.by, victim.ballRadius, victim.skin);
     spawnKillLoot(victim);
     spawnSparks(victim.x, victim.y, 34, victim.skin.coreColor, '#fde047', 120, 520);
     spawnShockwave(victim.x, victim.y, 90 + victim.ballRadius, victim.skin.trailColor);
@@ -1204,14 +1335,39 @@
     pushKillFeed(attacker.name, victim.name, involvesMe);
 
     if (attacker === player && mode === 'playing') {
-      hitStopTimer = 0.055; // Crunchy 55ms impact freeze!
+      hitStopTimer = 0.055;
       shake = Math.max(shake, isGiantSlayer ? 22 : 15);
       sfx.smash(isGiantSlayer || attacker.streakCount >= 2);
+
+      let label = 'SMASH!';
+      let col = '#fde047';
+      if (victim.isBot && victim.iq && victim.iq.id === 'EXTREME') {
+        label = '⚡ TITAN BOSS SLAYED! +100';
+        col = '#f43f5e';
+        attacker.addScore(75);
+      } else if (victim.isBot && victim.iq && victim.iq.id === 'HIGH') {
+        label = '★ ELITE HUNTER DOWN! +50';
+        col = '#fb923c';
+        attacker.addScore(35);
+      } else if (isGiantSlayer) {
+        label = 'GIANT SLAYER! +60';
+        col = '#38bdf8';
+      } else if (attacker.streakCount === 2) {
+        label = 'DOUBLE SMASH!';
+        col = '#fb923c';
+      } else if (attacker.streakCount === 3) {
+        label = 'TRIPLE WRECK!';
+        col = '#f43f5e';
+      } else if (attacker.streakCount >= 4) {
+        label = `UNSTOPPABLE x${attacker.streakCount}!`;
+        col = '#e879f9';
+      }
       addFloatingText(victim.x, victim.y - 26, label, col, isGiantSlayer ? 30 : 26);
     } else if (victim === player && mode === 'playing') {
       shake = 24;
       sfx.smash(true);
-      onPlayerDied(attacker.name);
+      const killerTitle = (attacker.isBot && attacker.iq) ? `[${attacker.iq.id}] ${attacker.name}` : attacker.name;
+      onPlayerDied(killerTitle);
     } else if (dist(victim.x, victim.y, camera.x, camera.y) < 750 && mode === 'playing') {
       sfx.smash(false);
     }
@@ -1222,13 +1378,9 @@
     const el = document.documentElement;
     try {
       if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (el.requestFullscreen) {
-          el.requestFullscreen().catch(() => {});
-        } else if (el.webkitRequestFullscreen) {
-          el.webkitRequestFullscreen();
-        } else if (el.msRequestFullscreen) {
-          el.msRequestFullscreen();
-        }
+        if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) el.msRequestFullscreen();
       }
     } catch (_) {}
   }
@@ -1246,45 +1398,42 @@
 
   function updateFullscreenButtons() {
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-    if (fsBtn) fsBtn.textContent = isFs ? '⛶' : '⛶';
-    if (lobbyFsBtn) lobbyFsBtn.textContent = isFs ? '✓ Fullscreen' : '⛶ Fullscreen';
+    if (fsBtn) fsBtn.textContent = '⛶';
+    if (topFsBtn) topFsBtn.textContent = isFs ? '✓' : '⛶';
   }
-
   document.addEventListener('fullscreenchange', updateFullscreenButtons);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenButtons);
-
-  // Auto-request fullscreen on first click or tap anywhere
-  const triggerAutoFullscreen = () => {
-    requestGameFullscreen();
-  };
-  window.addEventListener('pointerdown', triggerAutoFullscreen, { once: true });
-  window.addEventListener('keydown', triggerAutoFullscreen, { once: true });
 
   // ═══ GAME FLOW ═══
   function startGame() {
     sfx.init();
-    requestGameFullscreen();
-    const rawName = (nicknameInput.value || '').trim().slice(0, 14) || 'Wrecker';
-    const skin = SKINS[selectedSkinIdx];
+    mode = 'playing';
 
-    // Remove previous dead player if any
-    for (let i = entities.length - 1; i >= 0; i--) {
-      if (!entities[i].isBot) entities.splice(i, 1);
-    }
+    const nick = (nicknameInput.value.trim() || 'Wrecker').slice(0, 14);
+    const skin = SKINS[selectedSkinIdx] || SKINS[0];
 
+    document.body.classList.add('in-game');
+
+    // Spawn player in clean location
     player = new Wrecker({
-      name: rawName,
+      name: nick,
       skin,
       isBot: false,
       initialScore: 0
     });
-    entities.push(player);
+
+    const pIdx = entities.findIndex(e => e.id === player.id);
+    if (pIdx >= 0) entities[pIdx] = player;
+    else entities.push(player);
 
     camera.x = player.x;
     camera.y = player.y;
     camera.zoom = 0.86;
 
-    mode = 'playing';
+    input.mouseX = width * 0.5;
+    input.mouseY = height * 0.5 - 140;
+    input.hasPointer = true;
+    requestGamePointerLock();
+
     lobbyOverlay.classList.add('hidden');
     deathOverlay.classList.add('hidden');
     hud.classList.remove('hidden');
@@ -1297,9 +1446,9 @@
 
   function onPlayerDied(killerName) {
     mode = 'dead';
+    document.body.classList.remove('in-game', 'pointer-locked');
+    exitGamePointerLock();
     input.boosting = false;
-    input.spinCcw = false;
-    input.spinCw = false;
     hud.classList.add('hidden');
     deathOverlay.classList.remove('hidden');
 
@@ -1324,7 +1473,7 @@
 
     maintainPopulation();
 
-    // Update entities
+    // Update entities (pure mouse dragging steering)
     for (const e of entities) {
       if (!e.alive) continue;
 
@@ -1335,31 +1484,34 @@
           dx = (input.joyX - input.joyOriginX) / 56;
           dy = (input.joyY - input.joyOriginY) / 56;
         } else if (input.hasPointer) {
-          const worldMouseX = camera.x + (input.mouseX - width * 0.5) / camera.zoom;
-          const worldMouseY = camera.y + (input.mouseY - height * 0.5) / camera.zoom;
-          dx = (worldMouseX - e.x) / 42;
-          dy = (worldMouseY - e.y) / 42;
+          const screenPlayerX = width * 0.5 + (e.x - camera.x) * camera.zoom;
+          const screenPlayerY = height * 0.5 + (e.y - camera.y) * camera.zoom;
+          const aimDistX = input.mouseX - screenPlayerX;
+          const aimDistY = input.mouseY - screenPlayerY;
+          dx = aimDistX / (42 * camera.zoom);
+          dy = aimDistY / (42 * camera.zoom);
         }
-        const spinCmd = getPlayerSpinCmd();
-        e.update(dt, dx, dy, input.boosting, spinCmd);
-        if (spinCcwPill) spinCcwPill.classList.toggle('active', spinCmd === -1);
-        if (spinCwPill) spinCwPill.classList.toggle('active', spinCmd === 1);
+        e.update(dt, dx, dy, input.boosting);
       } else if (e.isBot) {
         const ai = computeBotInput(e, dt);
-        const botSpin = ai.boost ? e.aiOrbitDir : 0;
-        e.update(dt, ai.dx, ai.dy, ai.boost, botSpin);
+        e.update(dt, ai.dx, ai.dy, ai.boost);
       }
     }
 
-    // Drift loot shards
-    for (const s of shards) {
+    // Drift & decelerate grouped XP shards
+    for (let i = 0; i < shards.length; i++) {
+      const s = shards[i];
       s.pulse += dt * 4.5;
-      if (Math.abs(s.vx) > 1 || Math.abs(s.vy) > 1) {
+      if (s.vx || s.vy) {
         s.x += s.vx * dt;
         s.y += s.vy * dt;
-        s.vx *= Math.pow(0.92, dt * 60);
-        s.vy *= Math.pow(0.92, dt * 60);
-
+        const decay = Math.pow(0.86, dt * 60);
+        s.vx *= decay;
+        s.vy *= decay;
+        if (Math.hypot(s.vx, s.vy) < 4) {
+          s.vx = 0;
+          s.vy = 0;
+        }
         const d = Math.hypot(s.x, s.y);
         if (d > WORLD_RADIUS - 40) {
           const ang = Math.atan2(s.y, s.x);
@@ -1370,6 +1522,21 @@
     }
 
     resolveCollisions();
+
+    // Update ball burst shatter fragments
+    for (let i = ballFragments.length - 1; i >= 0; i--) {
+      const f = ballFragments[i];
+      f.life -= dt;
+      if (f.life <= 0) {
+        ballFragments.splice(i, 1);
+        continue;
+      }
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      f.vx *= Math.pow(0.92, dt * 60);
+      f.vy *= Math.pow(0.92, dt * 60);
+      f.rot += f.rotSpeed * dt;
+    }
 
     // Particles & FX
     for (let i = particles.length - 1; i >= 0; i--) {
@@ -1398,14 +1565,13 @@
 
     shake = Math.max(0, shake - dt * 42);
 
-    // Camera tracking (wider view so you spot incoming wrecking balls early!)
+    // Camera tracking
     if (mode === 'playing' && player && player.alive) {
       camera.x = lerp(camera.x, player.x, Math.min(1, dt * 10));
       camera.y = lerp(camera.y, player.y, Math.min(1, dt * 10));
-      const desiredZoom = clamp(0.88 - (player.ballRadius - 22) * 0.0048, 0.56, 0.88);
+      const desiredZoom = clamp(0.86 - (player.ballRadius - 22) * 0.0022, 0.42, 0.86);
       camera.zoom = lerp(camera.zoom, desiredZoom, Math.min(1, dt * 3));
     } else {
-      // Spectate #1 King smoothly in lobby / death screen
       const king = entities.find(e => e.id === kingId && e.alive) || entities[0];
       if (king) {
         camera.x = lerp(camera.x, king.x, Math.min(1, dt * 2.5));
@@ -1428,104 +1594,130 @@
   }
 
   function updateHud() {
-    const sorted = entities
-      .filter(e => e.alive)
-      .sort((a, b) => b.score - a.score);
-
-    kingId = sorted.length > 0 ? sorted[0].id : null;
-
     if (mode !== 'playing' || !player) return;
 
     hudScore.textContent = Math.floor(player.score);
     hudBallSize.textContent = `BALL SIZE: ${player.getSizeMult().toFixed(1)}x`;
     hudKills.textContent = player.kills;
 
-    if (hudShieldText) {
+    // Shield HUD indicator
+    if (hudShieldText && hudShieldPill) {
       if (player.hasShield) {
         hudShieldText.textContent = 'READY';
-        hudShieldText.style.color = '#38bdf8';
+        hudShieldPill.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+        hudShieldPill.style.background = 'rgba(15, 23, 42, 0.72)';
       } else {
-        const remaining = Math.max(0, Math.ceil(player.shieldRechargeMax - player.shieldRechargeTimer));
-        hudShieldText.textContent = `${remaining}s`;
-        hudShieldText.style.color = '#fbbf24';
+        const sec = Math.ceil(player.shieldRechargeTimer);
+        hudShieldText.textContent = `${sec}s`;
+        hudShieldPill.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+        hudShieldPill.style.background = 'rgba(69, 10, 10, 0.72)';
       }
     }
 
-    if (chainFill && chainVal) {
-      const pct = clamp(((player.activeChainFactor - 0.65) / (1.45 - 0.65)) * 100, 0, 100);
-      chainFill.style.width = `${pct.toFixed(0)}%`;
-      chainVal.textContent = `${player.activeChainFactor.toFixed(2)}x`;
-    }
+    // Sort leaderboard by score
+    const sorted = [...entities].filter(e => e.alive).sort((a, b) => b.score - a.score);
+    kingId = sorted.length ? sorted[0].id : null;
 
-    const top = sorted.slice(0, 7);
-    let html = '';
-    for (let i = 0; i < top.length; i++) {
-      const e = top[i];
-      const cls = `lb-row${e === player ? ' me' : ''}${i === 0 ? ' king' : ''}`;
-      const rankLabel = i === 0 ? '👑' : `${i + 1}.`;
-      html += `<li class="${cls}">
-        <span class="lb-left">
-          <span class="lb-rank">${rankLabel}</span>
-          <span class="lb-name">${escapeHtml(e.name)}</span>
-        </span>
+    leaderboardList.innerHTML = '';
+    const top5 = sorted.slice(0, 8);
+    let myRankFound = false;
+
+    top5.forEach((e, idx) => {
+      const isMe = e === player;
+      if (isMe) myRankFound = true;
+      const li = document.createElement('li');
+      li.className = 'lb-row' + (isMe ? ' me' : '') + (idx === 0 ? ' king' : '');
+
+      let botBadge = '';
+      if (e.isBot && e.iq) {
+        botBadge = `<span style="font-size: 9px; padding: 1px 4px; border-radius: 4px; background: rgba(255,255,255,0.1); color: ${e.iq.color}; margin-right: 3px;">${e.iq.name}</span>`;
+      }
+
+      li.innerHTML = `
+        <div class="lb-left">
+          <span class="lb-rank">${idx === 0 ? '👑' : idx + 1}</span>
+          ${botBadge}
+          <span class="lb-name">${e.name}</span>
+        </div>
         <span class="lb-score">${Math.floor(e.score)}</span>
-      </li>`;
+      `;
+      leaderboardList.appendChild(li);
+    });
+
+    if (!myRankFound && player && player.alive) {
+      const myRank = sorted.findIndex(e => e === player) + 1;
+      if (myRank > 0) {
+        const li = document.createElement('li');
+        li.className = 'lb-row me';
+        li.innerHTML = `
+          <div class="lb-left">
+            <span class="lb-rank">${myRank}</span>
+            <span class="lb-name">${player.name}</span>
+          </div>
+          <span class="lb-score">${Math.floor(player.score)}</span>
+        `;
+        leaderboardList.appendChild(li);
+      }
     }
-    leaderboardList.innerHTML = html;
   }
 
-  // ═══ RENDERING ═══
-  function drawBackground() {
-    ctx.fillStyle = '#090e1a';
-    ctx.fillRect(0, 0, width, height);
+  function pushKillFeed(killer, victim, isMe) {
+    const item = document.createElement('div');
+    item.className = 'kill-item' + (isMe ? ' is-me' : '');
+    item.innerHTML = `<span class="killer">${killer}</span><span class="verb">SMASHED</span><span class="victim">${victim}</span>`;
+    killFeed.appendChild(item);
+    setTimeout(() => {
+      if (item.parentNode) item.parentNode.removeChild(item);
+    }, 4200);
+  }
 
+  // ═══ DRAWING PIPELINE ═══
+  function drawBackground() {
     ctx.save();
-    const sx = (Math.random() - 0.5) * shake;
-    const sy = (Math.random() - 0.5) * shake;
-    ctx.translate(width * 0.5 + sx, height * 0.5 + sy);
+    ctx.clearRect(0, 0, width, height);
+
+    // Screen Shake
+    if (shake > 0) {
+      const sx = (Math.random() - 0.5) * shake;
+      const sy = (Math.random() - 0.5) * shake;
+      ctx.translate(sx, sy);
+    }
+
+    // World Camera Transform
+    ctx.translate(width * 0.5, height * 0.5);
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-camera.x, -camera.y);
 
-    // Arena Floor Disc
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, WORLD_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = '#111a2e';
-    ctx.fill();
-    ctx.clip();
-
-    // Subtle hexagonal/square tactical grid
-    const gridSize = 110;
     const viewW = width / camera.zoom;
     const viewH = height / camera.zoom;
-    const startX = Math.floor((camera.x - viewW * 0.6) / gridSize) * gridSize;
-    const endX = camera.x + viewW * 0.6;
-    const startY = Math.floor((camera.y - viewH * 0.6) / gridSize) * gridSize;
-    const endY = camera.y + viewH * 0.6;
 
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.075)';
-    ctx.lineWidth = 2;
+    // Arena Floor
     ctx.beginPath();
-    for (let x = startX; x <= endX; x += gridSize) {
+    ctx.arc(0, 0, WORLD_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = '#0f172a';
+    ctx.fill();
+
+    // Dark sleek hexagonal grid
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.lineWidth = 1.5;
+    const gridStep = 180;
+    const startX = Math.floor((camera.x - viewW * 0.6) / gridStep) * gridStep;
+    const endX = Math.ceil((camera.x + viewW * 0.6) / gridStep) * gridStep;
+    const startY = Math.floor((camera.y - viewH * 0.6) / gridStep) * gridStep;
+    const endY = Math.ceil((camera.y + viewH * 0.6) / gridStep) * gridStep;
+
+    ctx.beginPath();
+    for (let x = startX; x <= endX; x += gridStep) {
       ctx.moveTo(x, startY);
       ctx.lineTo(x, endY);
     }
-    for (let y = startY; y <= endY; y += gridSize) {
+    for (let y = startY; y <= endY; y += gridStep) {
       ctx.moveTo(startX, y);
       ctx.lineTo(endX, y);
     }
     ctx.stroke();
 
-    // Center Arena Ring Decal
-    ctx.beginPath();
-    ctx.arc(0, 0, 320, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
-    ctx.lineWidth = 6;
-    ctx.stroke();
-
-    ctx.restore();
-
-    // Glowing Red-Orange Hazard Perimeter Wall
+    // Arena Perimeter Ring
     ctx.beginPath();
     ctx.arc(0, 0, WORLD_RADIUS, 0, Math.PI * 2);
     ctx.strokeStyle = '#ef4444';
@@ -1535,7 +1727,7 @@
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Shards
+    // Radiant grouped XP gems & ambient shards
     for (const s of shards) {
       if (Math.abs(s.x - camera.x) > viewW * 0.62 || Math.abs(s.y - camera.y) > viewH * 0.62) continue;
       const pr = s.r + Math.sin(s.pulse) * 1.4;
@@ -1546,9 +1738,10 @@
       ctx.fillStyle = s.color;
       if (s.isLoot) {
         ctx.shadowColor = s.color;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 14;
       }
-      // Crisp glowing diamond shard
+
+      // Crisp diamond gem polygon
       ctx.beginPath();
       ctx.moveTo(0, -pr);
       ctx.lineTo(pr * 0.85, 0);
@@ -1557,7 +1750,8 @@
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      // Shiny inner facet reflection
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
       ctx.beginPath();
       ctx.arc(-pr * 0.15, -pr * 0.2, pr * 0.22, 0, Math.PI * 2);
       ctx.fill();
@@ -1576,7 +1770,27 @@
       ctx.globalAlpha = 1;
     }
 
-    // Draw all Wreckers (Chains -> Trails -> Cores -> Wrecking Balls -> Names)
+    // Ball Burst Shatter Pieces
+    for (const f of ballFragments) {
+      const alpha = clamp(f.life / f.maxLife, 0, 1);
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.rot);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = f.color;
+      ctx.strokeStyle = f.edgeColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(f.size, 0);
+      ctx.lineTo(-f.size * 0.6, -f.size * 0.6);
+      ctx.lineTo(-f.size * 0.4, f.size * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw all Wreckers
     for (const e of entities) {
       if (!e.alive) continue;
       if (Math.abs(e.x - camera.x) > viewW * 0.85 && Math.abs(e.bx - camera.x) > viewW * 0.85) continue;
@@ -1599,7 +1813,7 @@
       const alpha = clamp(ft.life / ft.maxLife, 0, 1);
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.font = `900 ${ft.size}px Fredoka, Outfit, sans-serif`;
+      ctx.font = `900 ${ft.size}px Fredoka, Lilita One, sans-serif`;
       ctx.textAlign = 'center';
       ctx.lineWidth = 5;
       ctx.strokeStyle = 'rgba(0,0,0,0.75)';
@@ -1609,259 +1823,283 @@
       ctx.restore();
     }
 
-    ctx.restore();
+    // Mouse pointer crosshair reticle when locked
+    if (mode === 'playing' && player && player.alive && input.hasPointer) {
+      const aimDistX = input.mouseX - (width * 0.5 + (player.x - camera.x) * camera.zoom);
+      const aimDistY = input.mouseY - (height * 0.5 + (player.y - camera.y) * camera.zoom);
+      const targetWorldX = player.x + aimDistX / camera.zoom;
+      const targetWorldY = player.y + aimDistY / camera.zoom;
 
-    // Virtual Joystick overlay on touch screens
-    if (mode === 'playing' && input.isTouch && input.joyActive) {
       ctx.save();
+      ctx.translate(targetWorldX, targetWorldY);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.arc(input.joyOriginX, input.joyOriginY, 56, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-      ctx.lineWidth = 3;
-      ctx.fill();
+      ctx.arc(0, 0, 9, 0, Math.PI * 2);
+      ctx.moveTo(-14, 0);
+      ctx.lineTo(-4, 0);
+      ctx.moveTo(4, 0);
+      ctx.lineTo(14, 0);
+      ctx.moveTo(0, -14);
+      ctx.lineTo(0, -4);
+      ctx.moveTo(0, 4);
+      ctx.lineTo(0, 14);
       ctx.stroke();
-
-      const jdx = input.joyX - input.joyOriginX;
-      const jdy = input.joyY - input.joyOriginY;
-      const jd = Math.hypot(jdx, jdy);
-      const maxJ = 48;
-      const kx = input.joyOriginX + (jd > maxJ ? (jdx / jd) * maxJ : jdx);
-      const ky = input.joyOriginY + (jd > maxJ ? (jdy / jd) * maxJ : jdy);
-
-      ctx.beginPath();
-      ctx.arc(kx, ky, 24, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.72)';
-      ctx.fill();
       ctx.restore();
     }
+
+    ctx.restore();
   }
 
   function drawWrecker(e) {
-    // 1. Blazing Ball Motion Trail
-    if (e.ballTrail.length > 2 && e.ballSpeed > 180) {
-      const hotFactor = clamp((e.ballSpeed - 180) / 550, 0, 1);
-      for (let i = 1; i < e.ballTrail.length; i++) {
-        const pt = e.ballTrail[i];
-        const ratio = 1 - i / e.ballTrail.length;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, pt.r * ratio * 0.85, 0, Math.PI * 2);
-        ctx.fillStyle = e.skin.trailColor;
-        ctx.globalAlpha = ratio * hotFactor * 0.32;
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    // 2. Linked Steel Chain from Core -> Ball
-    const linkCount = Math.max(5, Math.floor(dist(e.x, e.y, e.bx, e.by) / 18));
+    // 1. Steel Chain Tether
     ctx.save();
-    const hasTension = e.snapWhipTension > 0.15;
-    for (let i = 1; i < linkCount; i++) {
-      const t = i / linkCount;
+    ctx.strokeStyle = e.skin.chainColor;
+    ctx.lineWidth = Math.max(3.5, 3.5 + (e.ballRadius - 22) * 0.04);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(e.x, e.y);
+    ctx.lineTo(e.bx, e.by);
+    ctx.stroke();
+
+    // Chain links
+    const linkD = dist(e.x, e.y, e.bx, e.by);
+    const linkSteps = Math.max(3, Math.floor(linkD / 22));
+    ctx.fillStyle = '#ffffff';
+    for (let i = 1; i < linkSteps; i++) {
+      const t = i / linkSteps;
       const lx = lerp(e.x, e.bx, t);
       const ly = lerp(e.y, e.by, t);
-      const ang = Math.atan2(e.by - e.y, e.bx - e.x);
-
-      ctx.save();
-      ctx.translate(lx, ly);
-      ctx.rotate(ang);
-      ctx.strokeStyle = hasTension
-        ? '#ffffff'
-        : ((e.boosting || e.spinCmd !== 0) ? e.skin.trailColor : e.skin.chainColor);
-      if (hasTension) {
-        ctx.shadowColor = '#f97316';
-        ctx.shadowBlur = e.snapWhipTension * 16;
-      }
-      ctx.lineWidth = i % 2 === 0 ? 4.2 : 3.2;
       ctx.beginPath();
-      ctx.ellipse(0, 0, 7, i % 2 === 0 ? 4 : 2.2, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+      ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
 
-    // 3. Player/Bot Core Pod
-    ctx.save();
-    ctx.translate(e.x, e.y);
-
-    // Spawn protection bubble
-    if (e.shieldTimer > 0) {
-      ctx.beginPath();
-      ctx.arc(0, 0, e.coreRadius + 10, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
-      ctx.lineWidth = 3;
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    // 1-Hit Energy Shield Armor (Hexagonal rotating shield)
-    if (e.hasShield) {
-      const shieldR = e.coreRadius + 8;
+    // 2. Ball Motion Blur Trail
+    if (e.ballTrail.length > 2 && e.ballSpeed > 360) {
       ctx.save();
-      ctx.rotate(Date.now() * 0.0028);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
-      ctx.lineWidth = 2.4;
-      ctx.beginPath();
-      for (let s = 0; s < 6; s++) {
-        const sa = (s / 6) * Math.PI * 2;
-        const sx = Math.cos(sa) * shieldR;
-        const sy = Math.sin(sa) * shieldR;
-        if (s === 0) ctx.moveTo(sx, sy);
-        else ctx.lineTo(sx, sy);
+      for (let i = 0; i < e.ballTrail.length - 1; i++) {
+        const pt = e.ballTrail[i];
+        const alpha = (i / e.ballTrail.length) * 0.45;
+        const trailR = e.ballRadius * (0.6 + 0.4 * (i / e.ballTrail.length));
+        ctx.fillStyle = e.skin.trailColor;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, trailR, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.closePath();
-      ctx.stroke();
-      ctx.fill();
       ctx.restore();
     }
 
-    // Shield grace invulnerability flicker
-    if (e.shieldGraceTimer > 0) {
-      ctx.globalAlpha = (Math.floor(Date.now() / 65) % 2 === 0) ? 0.35 : 0.95;
+    // 3. Player Vehicle Core
+    ctx.save();
+    ctx.translate(e.x, e.y);
+
+    // Energy Shield Bubble FX (1-Hit protection)
+    if (e.hasShield) {
+      const shieldPulse = (Math.sin(Date.now() * 0.007) + 1) * 0.5;
+      const shieldR = e.coreRadius + 8 + shieldPulse * 3;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, shieldR, 0, Math.PI * 2);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.globalAlpha = 0.65 + shieldPulse * 0.35;
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 14 + shieldPulse * 8;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+      ctx.fill();
+      ctx.restore();
+    } else if (e.shieldGraceTimer > 0) {
+      // Flashing grace immunity
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, e.coreRadius + 10, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = (Math.sin(Date.now() * 0.03) + 1) * 0.4;
+      ctx.stroke();
+      ctx.restore();
     }
 
-    ctx.rotate(e.facing);
+    // Spawn Invulnerability Shield (Gold)
+    if (e.shieldTimer > 0) {
+      ctx.beginPath();
+      ctx.arc(0, 0, e.coreRadius + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.8;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
 
-    // Core shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath();
-    ctx.arc(3, 5, e.coreRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Thruster nozzle on back
-    ctx.fillStyle = '#334155';
-    ctx.fillRect(-e.coreRadius - 4, -8, 10, 16);
-
-    // Armored Core sphere
-    const coreGrad = ctx.createRadialGradient(-5, -5, 3, 0, 0, e.coreRadius);
-    coreGrad.addColorStop(0, '#ffffff');
-    coreGrad.addColorStop(0.28, e.skin.coreColor);
-    coreGrad.addColorStop(1, e.skin.coreDark);
-    ctx.fillStyle = coreGrad;
+    // Outer core chassis
+    ctx.fillStyle = e.skin.coreColor;
     ctx.beginPath();
     ctx.arc(0, 0, e.coreRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.lineWidth = 3;
-    ctx.strokeStyle = e === player ? '#ffffff' : 'rgba(255,255,255,0.45)';
+    ctx.strokeStyle = '#ffffff';
     ctx.stroke();
 
-    // Expressive eyes looking forward (gives instant Slither/Blades personality!)
+    // Directional cockpit pointer
+    ctx.rotate(e.facing);
+    ctx.fillStyle = e.skin.coreDark;
+    ctx.beginPath();
+    ctx.arc(0, 0, e.coreRadius * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(8, -7, 5, 0, Math.PI * 2);
-    ctx.arc(8, 7, 5, 0, Math.PI * 2);
+    ctx.moveTo(e.coreRadius * 0.75, 0);
+    ctx.lineTo(e.coreRadius * 0.25, -e.coreRadius * 0.35);
+    ctx.lineTo(e.coreRadius * 0.25, e.coreRadius * 0.35);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.arc(10, -7, 2.4, 0, Math.PI * 2);
-    ctx.arc(10, 7, 2.4, 0, Math.PI * 2);
-    ctx.fill();
-
     ctx.restore();
 
-    // Crown above #1 King
-    if (e.id === kingId) {
-      ctx.save();
-      ctx.font = '20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('👑', e.x, e.y - e.coreRadius - 24);
-      ctx.restore();
+    // Bot IQ Badge & Name Tag
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '700 13px Fredoka, Outfit, sans-serif';
+
+    if (e.isBot && e.iq) {
+      const badgeText = e.iq.badge;
+      ctx.font = '800 11px Fredoka, sans-serif';
+      ctx.fillStyle = e.iq.color;
+      ctx.fillText(badgeText, e.x, e.y - e.coreRadius - 20);
+      ctx.font = '700 13px Fredoka, Outfit, sans-serif';
     }
 
-    // Crisp Nameplate
-    ctx.save();
-    ctx.font = '800 13px Outfit, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(9, 14, 26, 0.85)';
-    ctx.strokeText(e.name, e.x, e.y - e.coreRadius - 9);
-    ctx.fillStyle = e === player ? '#fde047' : '#f1f5f9';
-    ctx.fillText(e.name, e.x, e.y - e.coreRadius - 9);
+    ctx.fillStyle = e === player ? '#38bdf8' : '#ffffff';
+    ctx.fillText(e.name, e.x, e.y - e.coreRadius - 6);
     ctx.restore();
 
     // 4. THE WRECKING BALL!
     drawBallSprite(ctx, e.bx, e.by, e.ballRadius, e.ballSpin, e.skin, e.ballSpeed > 520);
+
+    // 5. SINGLE MINIMALIST BALL MOVEMENT DIRECTION ARROW
+    drawBallDirectionArrow(ctx, e);
   }
 
   function drawBallSprite(targetCtx, x, y, r, spin, skin, isHot = false) {
     targetCtx.save();
     targetCtx.translate(x, y);
 
+    // Titan Energy Aura when huge
+    if (r > 75) {
+      const auraPulse = (Math.sin(Date.now() * 0.005) + 1) * 0.5;
+      const auraR = r * (1.30 + auraPulse * 0.10);
+      targetCtx.save();
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, auraR, 0, Math.PI * 2);
+      targetCtx.strokeStyle = skin.trailColor;
+      targetCtx.lineWidth = 3 + auraPulse * 4;
+      targetCtx.globalAlpha = 0.45 + auraPulse * 0.4;
+      targetCtx.shadowColor = skin.trailColor;
+      targetCtx.shadowBlur = 18 + auraPulse * 16;
+      targetCtx.stroke();
+      targetCtx.restore();
+    }
+
     // Drop shadow
-    targetCtx.fillStyle = 'rgba(0,0,0,0.38)';
+    targetCtx.fillStyle = 'rgba(0,0,0,0.35)';
     targetCtx.beginPath();
     targetCtx.arc(4, 6, r, 0, Math.PI * 2);
     targetCtx.fill();
 
+    // Blazing kinetic glow on high-speed whips
     if (isHot) {
       targetCtx.shadowColor = skin.trailColor;
-      targetCtx.shadowBlur = 22;
+      targetCtx.shadowBlur = 24;
     }
 
+    // Outer Ball Body
     targetCtx.rotate(spin);
+    targetCtx.fillStyle = skin.ballColor;
+    targetCtx.beginPath();
+    targetCtx.arc(0, 0, r, 0, Math.PI * 2);
+    targetCtx.fill();
 
-    // Outer Spikes / Saw Teeth
-    const spikes = skin.style === 'saw' ? 12 : 8;
-    const spikeLen = skin.style === 'saw' ? r * 0.34 : r * 0.28;
+    // Lethal Perimeter Spikes
+    const spikeCount = Math.max(8, Math.floor(r * 0.38));
+    const spikeLen = Math.max(7, r * 0.32);
+    const spikeBase = Math.max(4, r * 0.16);
+
     targetCtx.fillStyle = skin.spikeColor;
-    for (let i = 0; i < spikes; i++) {
-      const a = (i / spikes) * Math.PI * 2;
+    for (let i = 0; i < spikeCount; i++) {
+      const sa = (i / spikeCount) * Math.PI * 2;
       targetCtx.save();
-      targetCtx.rotate(a);
+      targetCtx.rotate(sa);
       targetCtx.beginPath();
-      if (skin.style === 'saw') {
-        targetCtx.moveTo(r * 0.82, -r * 0.14);
-        targetCtx.lineTo(r + spikeLen, r * 0.1);
-        targetCtx.lineTo(r * 0.82, r * 0.24);
-      } else {
-        targetCtx.moveTo(r * 0.82, -r * 0.17);
-        targetCtx.lineTo(r + spikeLen, 0);
-        targetCtx.lineTo(r * 0.82, r * 0.17);
-      }
+      targetCtx.moveTo(r, -spikeBase * 0.5);
+      targetCtx.lineTo(r + spikeLen, 0);
+      targetCtx.lineTo(r, spikeBase * 0.5);
       targetCtx.closePath();
       targetCtx.fill();
       targetCtx.restore();
     }
 
-    // Metallic / Glowing Sphere Body
-    const grad = targetCtx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.12, 0, 0, r);
+    // 3D Spherical Specular Highlight
+    const grad = targetCtx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.05, 0, 0, r);
     grad.addColorStop(0, skin.ballHighlight);
-    grad.addColorStop(0.42, skin.ballColor);
+    grad.addColorStop(0.5, skin.ballColor);
     grad.addColorStop(1, skin.ballDark);
     targetCtx.fillStyle = grad;
     targetCtx.beginPath();
     targetCtx.arc(0, 0, r, 0, Math.PI * 2);
     targetCtx.fill();
 
-    targetCtx.lineWidth = Math.max(2, r * 0.08);
-    targetCtx.strokeStyle = isHot ? '#ffffff' : 'rgba(255,255,255,0.28)';
-    targetCtx.stroke();
+    // Central steel bolt
+    targetCtx.fillStyle = skin.ballDark;
+    targetCtx.beginPath();
+    targetCtx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+    targetCtx.fill();
 
-    // Inner Emblem / Core Glow
-    if (skin.style === 'magma' || skin.style === 'plasma' || skin.style === 'saw') {
-      targetCtx.beginPath();
-      targetCtx.arc(0, 0, r * 0.38, 0, Math.PI * 2);
-      targetCtx.fillStyle = skin.trailColor;
-      targetCtx.fill();
-    } else if (skin.style === 'crown') {
-      targetCtx.beginPath();
-      targetCtx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
-      targetCtx.strokeStyle = '#fef9c3';
-      targetCtx.lineWidth = Math.max(2, r * 0.09);
-      targetCtx.stroke();
-    } else {
-      // Rivet ring
-      targetCtx.fillStyle = 'rgba(255,255,255,0.35)';
-      for (let i = 0; i < 4; i++) {
-        const a = (i / 4) * Math.PI * 2;
-        targetCtx.beginPath();
-        targetCtx.arc(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, Math.max(2, r * 0.09), 0, Math.PI * 2);
-        targetCtx.fill();
-      }
-    }
+    targetCtx.fillStyle = '#ffffff';
+    targetCtx.beginPath();
+    targetCtx.arc(-r * 0.08, -r * 0.08, r * 0.10, 0, Math.PI * 2);
+    targetCtx.fill();
+
+    targetCtx.restore();
+  }
+
+  // ═══ SINGLE MINIMALIST DIRECTION ARROW INDICATOR ═══
+  function drawBallDirectionArrow(targetCtx, e) {
+    const spd = e.ballSpeed;
+    if (spd < 35) return; // Only show when the ball is moving
+
+    const ang = Math.atan2(e.bvy, e.bvx);
+    const r = e.ballRadius;
+    const isPlayer = (e === player);
+
+    targetCtx.save();
+    targetCtx.translate(e.bx, e.by);
+    targetCtx.rotate(ang);
+
+    // Single sleek minimalist arrow right outside the ball radius
+    const tipDist = r + 18;
+    const baseDist = r + 5;
+    const wingWidth = 7;
+
+    targetCtx.beginPath();
+    targetCtx.moveTo(tipDist, 0);
+    targetCtx.lineTo(baseDist, -wingWidth);
+    targetCtx.lineTo(baseDist + 3, 0);
+    targetCtx.lineTo(baseDist, wingWidth);
+    targetCtx.closePath();
+
+    targetCtx.fillStyle = isPlayer ? '#ffffff' : (e.skin.trailColor || '#fb923c');
+    targetCtx.shadowColor = isPlayer ? '#38bdf8' : (e.skin.trailColor || '#fb923c');
+    targetCtx.shadowBlur = isPlayer ? 10 : 6;
+    targetCtx.globalAlpha = isPlayer ? 0.95 : 0.65;
+    targetCtx.fill();
+
+    targetCtx.strokeStyle = isPlayer ? '#38bdf8' : 'rgba(0,0,0,0.4)';
+    targetCtx.lineWidth = 1.5;
+    targetCtx.stroke();
 
     targetCtx.restore();
   }
@@ -1886,30 +2124,65 @@
     mctx.lineTo(w - 6, cy);
     mctx.stroke();
 
-    for (const e of entities) {
-      if (!e.alive) continue;
-      const mx = cx + (e.x / WORLD_RADIUS) * rad;
-      const my = cy + (e.y / WORLD_RADIUS) * rad;
+    // Map bounds
+    mctx.beginPath();
+    mctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    mctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
 
+    const scale = rad / WORLD_RADIUS;
+
+    // Draw other entities
+    for (const e of entities) {
+      if (!e.alive || e === player) continue;
+      const mx = cx + e.x * scale;
+      const my = cy + e.y * scale;
+      const isKing = e.id === kingId;
+
+      mctx.fillStyle = isKing ? '#facc15' : '#ef4444';
       mctx.beginPath();
-      if (e === player) {
-        mctx.fillStyle = '#ffffff';
-        mctx.arc(mx, my, 4.5, 0, Math.PI * 2);
-        mctx.fill();
-      } else if (e.id === kingId) {
-        mctx.fillStyle = '#facc15';
-        mctx.arc(mx, my, 4.2, 0, Math.PI * 2);
-        mctx.fill();
-      } else {
-        mctx.fillStyle = e.skin.trailColor;
-        mctx.arc(mx, my, 2.3, 0, Math.PI * 2);
-        mctx.fill();
-      }
+      mctx.arc(mx, my, isKing ? 3.5 : 2, 0, Math.PI * 2);
+      mctx.fill();
+    }
+
+    // Player blip
+    if (player && player.alive) {
+      const px = cx + player.x * scale;
+      const py = cy + player.y * scale;
+
+      mctx.fillStyle = '#38bdf8';
+      mctx.beginPath();
+      mctx.arc(px, py, 3.8, 0, Math.PI * 2);
+      mctx.fill();
+
+      // Heading indicator
+      mctx.strokeStyle = '#38bdf8';
+      mctx.lineWidth = 1.5;
+      mctx.beginPath();
+      mctx.moveTo(px, py);
+      mctx.lineTo(px + Math.cos(player.facing) * 9, py + Math.sin(player.facing) * 9);
+      mctx.stroke();
     }
   }
 
-  // ═══ SKIN PICKER UI ═══
+  // ═══ SKIN CUSTOMIZER & PREVIEW ═══
+  function selectSkin(idx) {
+    selectedSkinIdx = idx;
+    const skin = SKINS[idx];
+    if (skinNameLabel) skinNameLabel.textContent = skin.name;
+    if (skinRarityLabel) skinRarityLabel.textContent = skin.rarity || 'STARTER ⚙️';
+
+    if (skinPicker) {
+      const dots = skinPicker.querySelectorAll('.skin-dot');
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('selected', i === idx);
+      });
+    }
+  }
+
   function buildSkinPicker() {
+    if (!skinPicker) return;
     skinPicker.innerHTML = '';
     SKINS.forEach((skin, idx) => {
       const btn = document.createElement('button');
@@ -1918,68 +2191,117 @@
       btn.title = skin.name;
 
       const c = document.createElement('canvas');
-      c.width = 64;
-      c.height = 64;
+      c.width = 38;
+      c.height = 38;
       const sctx = c.getContext('2d');
-      drawBallSprite(sctx, 32, 32, 18, 0.35, skin, false);
+      drawBallSprite(sctx, 19, 19, 9, 0, skin, false);
       btn.appendChild(c);
 
       btn.addEventListener('click', () => {
-        selectedSkinIdx = idx;
-        skinNameLabel.textContent = skin.name;
-        document.querySelectorAll('.skin-dot').forEach((el, i) => {
-          el.classList.toggle('selected', i === idx);
-        });
+        selectSkin(idx);
       });
 
       skinPicker.appendChild(btn);
     });
-    skinNameLabel.textContent = SKINS[selectedSkinIdx].name;
+    selectSkin(selectedSkinIdx);
   }
 
-  // ═══ INPUT LISTENERS ═══
-  // Prevent browser right-click context menu so RMB cleanly spins Clockwise!
+  let avatarAngle = 0;
+  function renderAvatarPreview() {
+    if (!avatarCanvas || mode !== 'lobby') return;
+    const actx = avatarCanvas.getContext('2d');
+    actx.clearRect(0, 0, 130, 130);
+
+    const skin = SKINS[selectedSkinIdx] || SKINS[0];
+    avatarAngle += 0.035;
+    const cx = 65;
+    const cy = 65;
+    const orbitR = 38;
+    const bx = cx + Math.cos(avatarAngle) * orbitR;
+    const by = cy + Math.sin(avatarAngle) * orbitR;
+
+    // Ambient radial glow
+    const grad = actx.createRadialGradient(cx, cy, 10, cx, cy, 60);
+    grad.addColorStop(0, skin.glowColor || 'rgba(56, 189, 248, 0.35)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    actx.fillStyle = grad;
+    actx.beginPath();
+    actx.arc(cx, cy, 60, 0, Math.PI * 2);
+    actx.fill();
+
+    // Steel chain link
+    actx.strokeStyle = skin.chainColor || '#94a3b8';
+    actx.lineWidth = 3.5;
+    actx.lineCap = 'round';
+    actx.beginPath();
+    actx.moveTo(cx, cy);
+    actx.lineTo(bx, by);
+    actx.stroke();
+
+    // Player core
+    actx.fillStyle = skin.coreColor || '#38bdf8';
+    actx.beginPath();
+    actx.arc(cx, cy, 13, 0, Math.PI * 2);
+    actx.fill();
+    actx.strokeStyle = '#ffffff';
+    actx.lineWidth = 2.5;
+    actx.stroke();
+
+    // Core center eye
+    actx.fillStyle = '#0f172a';
+    actx.beginPath();
+    actx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+    actx.fill();
+
+    // Wrecking Ball with Spikes
+    drawBallSprite(actx, bx, by, 16, avatarAngle * 2.2, skin, false);
+  }
+
+  // ═══ INPUT LISTENERS (PURE MOUSE DRAGGING) ═══
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
   });
 
-  // Mouse Scroll Wheel adjusts Chain Reach (0.65x tight defense to 1.45x wide sweep)
-  window.addEventListener('wheel', (e) => {
-    if (mode !== 'playing' || !player || !player.alive) return;
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      player.adjustChain(0.08);
-    } else if (e.deltaY > 0) {
-      player.adjustChain(-0.08);
-    }
-  }, { passive: false });
-
   window.addEventListener('mousemove', (e) => {
-    input.mouseX = e.clientX;
-    input.mouseY = e.clientY;
     input.hasPointer = true;
-  });
-
-  window.addEventListener('mousedown', (e) => {
-    if (mode !== 'playing') return;
-    if (e.button === 0) {
-      input.spinCcw = true;      // Left Click -> Anticlockwise
-      input.lastSpinDir = -1;
-    } else if (e.button === 2) {
-      input.spinCw = true;       // Right Click -> Clockwise
-      input.lastSpinDir = 1;
+    if (document.pointerLockElement === canvas) {
+      input.mouseX = clamp(input.mouseX + e.movementX, 0, width);
+      input.mouseY = clamp(input.mouseY + e.movementY, 0, height);
+    } else {
+      input.mouseX = e.clientX;
+      input.mouseY = e.clientY;
     }
   });
 
-  window.addEventListener('mouseup', (e) => {
-    if (e.button === 0) input.spinCcw = false;
-    else if (e.button === 2) input.spinCw = false;
+  document.addEventListener('pointerlockchange', updatePointerLockUI);
+
+  canvas.addEventListener('click', () => {
+    if (mode === 'playing') {
+      requestGamePointerLock();
+    }
+  });
+
+  if (mouseLockBtn) {
+    mouseLockBtn.addEventListener('click', () => {
+      if (document.pointerLockElement === canvas) {
+        exitGamePointerLock();
+      } else {
+        requestGamePointerLock();
+      }
+    });
+  }
+
+  // No LMB or RMB functions! Pure mouse dragging game.
+  window.addEventListener('mousedown', () => {
+    // Pure mouse dragging - clicks do not spin or trigger actions
+  });
+
+  window.addEventListener('mouseup', () => {
+    // Pure mouse dragging
   });
 
   window.addEventListener('blur', () => {
     input.boosting = false;
-    input.spinCcw = false;
-    input.spinCw = false;
   });
 
   window.addEventListener('keydown', (e) => {
@@ -1991,16 +2313,6 @@
         e.preventDefault();
         startGame();
       }
-    } else if (mode === 'playing' && (e.code === 'KeyA' || e.code === 'KeyQ' || e.code === 'ArrowLeft')) {
-      input.spinCcw = true;
-      input.lastSpinDir = -1;
-    } else if (mode === 'playing' && (e.code === 'KeyD' || e.code === 'KeyE' || e.code === 'ArrowRight')) {
-      input.spinCw = true;
-      input.lastSpinDir = 1;
-    } else if (mode === 'playing' && (e.code === 'KeyW' || e.code === 'ArrowUp')) {
-      if (player && player.alive) player.adjustChain(0.08);
-    } else if (mode === 'playing' && (e.code === 'KeyS' || e.code === 'ArrowDown')) {
-      if (player && player.alive) player.adjustChain(-0.08);
     } else if (e.code === 'Enter') {
       if (mode === 'dead') startGame();
       else if (mode === 'lobby' && document.activeElement === nicknameInput) startGame();
@@ -2008,9 +2320,9 @@
   });
 
   window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') input.boosting = false;
-    else if (e.code === 'KeyA' || e.code === 'KeyQ' || e.code === 'ArrowLeft') input.spinCcw = false;
-    else if (e.code === 'KeyD' || e.code === 'KeyE' || e.code === 'ArrowRight') input.spinCw = false;
+    if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+      input.boosting = false;
+    }
   });
 
   // Mobile Touch Controls
@@ -2050,32 +2362,6 @@
     }
   }, { passive: true });
 
-  mobileCcwBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    input.spinCcw = true;
-    input.lastSpinDir = -1;
-  }, { passive: false });
-  mobileCcwBtn.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    input.spinCcw = false;
-  }, { passive: false });
-  mobileCcwBtn.addEventListener('touchcancel', () => {
-    input.spinCcw = false;
-  });
-
-  mobileCwBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    input.spinCw = true;
-    input.lastSpinDir = 1;
-  }, { passive: false });
-  mobileCwBtn.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    input.spinCw = false;
-  }, { passive: false });
-  mobileCwBtn.addEventListener('touchcancel', () => {
-    input.spinCw = false;
-  });
-
   mobileBoostBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
     input.boosting = true;
@@ -2085,29 +2371,18 @@
     e.preventDefault();
     input.boosting = false;
   }, { passive: false });
+
   mobileBoostBtn.addEventListener('touchcancel', () => {
     input.boosting = false;
   });
 
-  if (mobileChainShortBtn) {
-    mobileChainShortBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (player && player.alive) player.adjustChain(-0.1);
-    }, { passive: false });
-  }
-
-  if (mobileChainLongBtn) {
-    mobileChainLongBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (player && player.alive) player.adjustChain(0.1);
-    }, { passive: false });
-  }
-
-  // Buttons
+  // Lobby Buttons & Navigation
   playBtn.addEventListener('click', startGame);
   respawnBtn.addEventListener('click', startGame);
   backLobbyBtn.addEventListener('click', () => {
     mode = 'lobby';
+    document.body.classList.remove('in-game', 'pointer-locked');
+    exitGamePointerLock();
     deathOverlay.classList.add('hidden');
     lobbyOverlay.classList.remove('hidden');
   });
@@ -2117,8 +2392,67 @@
     muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
   });
 
+  if (topMuteBtn) {
+    topMuteBtn.addEventListener('click', () => {
+      sfx.muted = !sfx.muted;
+      topMuteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+      muteBtn.textContent = sfx.muted ? '🔇' : '🔊';
+    });
+  }
+
   if (fsBtn) fsBtn.addEventListener('click', toggleGameFullscreen);
-  if (lobbyFsBtn) lobbyFsBtn.addEventListener('click', toggleGameFullscreen);
+  if (topFsBtn) topFsBtn.addEventListener('click', toggleGameFullscreen);
+
+  if (prevSkinBtn) {
+    prevSkinBtn.addEventListener('click', () => {
+      const nextIdx = (selectedSkinIdx - 1 + SKINS.length) % SKINS.length;
+      selectSkin(nextIdx);
+    });
+  }
+
+  if (nextSkinBtn) {
+    nextSkinBtn.addEventListener('click', () => {
+      const nextIdx = (selectedSkinIdx + 1) % SKINS.length;
+      selectSkin(nextIdx);
+    });
+  }
+
+  if (randomNickBtn) {
+    randomNickBtn.addEventListener('click', () => {
+      const sampleNames = ['ApexCrusher', 'VoidReaper', 'SteelViper', 'DoomWhip', 'TitanClaw', 'NanoSmasher', 'ChainKing', 'OrbitSmash', 'IronSpiker', 'MeteorFury'];
+      nicknameInput.value = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+    });
+  }
+
+  if (privateRoomBtn) {
+    privateRoomBtn.addEventListener('click', () => {
+      const roomLink = `${window.location.origin}/wreckball/?room=private_${Math.floor(1000 + Math.random() * 9000)}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(roomLink).catch(() => {});
+      }
+      if (skribblToast) {
+        skribblToast.classList.remove('hidden');
+        setTimeout(() => skribblToast.classList.add('hidden'), 3000);
+      }
+    });
+  }
+
+  if (topShareBtn) {
+    topShareBtn.addEventListener('click', () => {
+      const shareUrl = `${window.location.origin}/wreckball/`;
+      if (navigator.share) {
+        navigator.share({ title: 'WreckBall.io', url: shareUrl }).catch(() => {});
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          if (skribblToast) {
+            skribblToast.textContent = '✓ Game link copied!';
+            skribblToast.classList.remove('hidden');
+            setTimeout(() => skribblToast.classList.add('hidden'), 3000);
+          }
+        }).catch(() => {});
+      }
+    });
+  }
 
   // ═══ BOOT & LOOP ═══
   buildSkinPicker();
@@ -2132,6 +2466,7 @@
     update(dt);
     drawBackground();
     drawMinimap();
+    renderAvatarPreview();
 
     requestAnimationFrame(loop);
   }
