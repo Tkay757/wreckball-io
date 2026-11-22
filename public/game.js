@@ -484,6 +484,18 @@
     return Math.hypot(x2 - x1, y2 - y1);
   }
 
+  // Distance from point (px, py) to line segment (x1, y1) -> (x2, y2) for continuous swept-circle collision
+  function distPointToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq < 0.0001) return dist(px, py, x1, y1);
+    const t = clamp(((px - x1) * dx + (py - y1) * dy) / lenSq, 0, 1);
+    const projX = x1 + t * dx;
+    const projY = y1 + t * dy;
+    return dist(px, py, projX, projY);
+  }
+
   function randomBotName(tier) {
     if (tier && tier.names && tier.names.length) {
       return tier.names[Math.floor(Math.random() * tier.names.length)];
@@ -574,6 +586,8 @@
       const startAngle = this.facing + Math.PI;
       this.bx = this.x + Math.cos(startAngle) * this.chainLen;
       this.by = this.y + Math.sin(startAngle) * this.chainLen;
+      this.prevBx = this.bx;
+      this.prevBy = this.by;
       this.bvx = -Math.sin(startAngle) * 160;
       this.bvy = Math.cos(startAngle) * 160;
       this.ballSpin = 0;
@@ -777,6 +791,10 @@
       const whipPump = coreTangSpeed * 3.2 * dt;
       this.bvx += tx * whipPump;
       this.bvy += ty * whipPump;
+
+      // Store previous ball position for continuous swept-circle collision detection
+      this.prevBx = this.bx;
+      this.prevBy = this.by;
 
       // Integrate ball position
       this.bx += this.bvx * dt;
@@ -1195,13 +1213,48 @@
   function resolveCollisions() {
     const aliveEntities = entities.filter(e => e.alive);
 
-    // 1. Ball vs Ball Ricochet
+    // 1. Core vs Core Bumper Collision (solid, responsive vehicle collisions)
+    for (let i = 0; i < aliveEntities.length; i++) {
+      const a = aliveEntities[i];
+      for (let j = i + 1; j < aliveEntities.length; j++) {
+        const b = aliveEntities[j];
+        const d = dist(a.x, a.y, b.x, b.y);
+        const minCoreDist = a.coreRadius + b.coreRadius;
+        if (d < minCoreDist && d > 0.001) {
+          const overlap = minCoreDist - d;
+          const nx = (b.x - a.x) / d;
+          const ny = (b.y - a.y) / d;
+          a.x -= nx * overlap * 0.5;
+          a.y -= ny * overlap * 0.5;
+          b.x += nx * overlap * 0.5;
+          b.y += ny * overlap * 0.5;
+
+          const relVx = b.vx - a.vx;
+          const relVy = b.vy - a.vy;
+          const dot = relVx * nx + relVy * ny;
+          if (dot < 0) {
+            a.vx -= nx * dot * 0.65;
+            a.vy -= ny * dot * 0.65;
+            b.vx += nx * dot * 0.65;
+            b.vy += ny * dot * 0.65;
+            if (Math.abs(dot) > 140 && (a === player || b === player)) {
+              sfx.clang(0.3);
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Spiked Ball vs Ball Ricochet (accounting for spike reach on clash)
     for (let i = 0; i < aliveEntities.length; i++) {
       const a = aliveEntities[i];
       for (let j = i + 1; j < aliveEntities.length; j++) {
         const b = aliveEntities[j];
         const d = dist(a.bx, a.by, b.bx, b.by);
-        const minDist = a.ballRadius + b.ballRadius;
+        const spikeA = Math.max(7, a.ballRadius * 0.32);
+        const spikeB = Math.max(7, b.ballRadius * 0.32);
+        const minDist = a.ballRadius + b.ballRadius + (spikeA + spikeB) * 0.45;
+
         if (d < minDist && d > 0.001) {
           const overlap = minDist - d;
           const nx = (b.bx - a.bx) / d;
@@ -1221,7 +1274,7 @@
           const normVel = relVx * nx + relVy * ny;
 
           if (normVel < 0) {
-            const restitution = 1.35;
+            const restitution = 1.38;
             const impulse = -(1 + restitution) * normVel / (1 / massA + 1 / massB);
             a.bvx -= (impulse / massA) * nx;
             a.bvy -= (impulse / massA) * ny;
@@ -1229,11 +1282,11 @@
             b.bvy += (impulse / massB) * ny;
 
             const impactSpeed = Math.abs(normVel);
-            if (impactSpeed > 160) {
+            if (impactSpeed > 140) {
               const cx = (a.bx + b.bx) * 0.5;
               const cy = (a.by + b.by) * 0.5;
-              spawnSparks(cx, cy, Math.floor(clamp(impactSpeed / 40, 5, 18)), '#ffffff', '#fb923c', 140, 380);
-              if (dist(cx, cy, camera.x, camera.y) < 700) {
+              spawnSparks(cx, cy, Math.floor(clamp(impactSpeed / 38, 5, 20)), '#ffffff', '#fb923c', 140, 400);
+              if (dist(cx, cy, camera.x, camera.y) < 750) {
                 sfx.clang(clamp(impactSpeed / 800, 0.2, 1.0));
               }
             }
@@ -1242,22 +1295,31 @@
       }
     }
 
-    // 2. Ball vs Enemy Core (Smash / 1-Hit Shield Protection)
+    // 3. Ball vs Enemy Core (Continuous Swept-Circle Collision with Spike Tip Reach)
     for (const attacker of aliveEntities) {
       for (const victim of aliveEntities) {
         if (attacker.id === victim.id) continue;
         if (victim.shieldTimer > 0) continue; // Spawn invulnerability
 
-        const hitDist = attacker.ballRadius + victim.coreRadius;
-        const d = dist(attacker.bx, attacker.by, victim.x, victim.y);
+        // Spike reach: visual spikes extend 32% beyond ball radius
+        const spikeReach = Math.max(7, attacker.ballRadius * 0.32);
+        const effectiveBallHitRadius = attacker.ballRadius + spikeReach * 0.85;
+        const hitDist = effectiveBallHitRadius + victim.coreRadius;
+
+        // Continuous swept-circle collision check between previous and current ball position
+        const d = distPointToSegment(
+          victim.x, victim.y,
+          attacker.prevBx || attacker.bx, attacker.prevBy || attacker.by,
+          attacker.bx, attacker.by
+        );
 
         // Near-Miss dodge detection
-        if (victim === player && d > hitDist && d < hitDist + 48 && attacker.ballSpeed > 320) {
+        if (victim === player && d > hitDist && d < hitDist + 52 && attacker.ballSpeed > 300) {
           if (victim.closeCallCooldown <= 0) {
             victim.closeCallCooldown = 0.8;
-            victim.boostEnergy = Math.min(100, victim.boostEnergy + 22);
+            victim.boostEnergy = Math.min(100, victim.boostEnergy + 24);
             sfx.pickup(4);
-            addFloatingText(victim.x, victim.y - 28, 'CLOSE CALL! +22⚡', '#38bdf8', 18);
+            addFloatingText(victim.x, victim.y - 28, 'CLOSE CALL! +24⚡', '#38bdf8', 18);
           }
         }
 
@@ -1273,13 +1335,15 @@
             spawnShieldBreakFX(victim.x, victim.y);
             sfx.shieldBreak();
 
-            // Heavy kinetic repulsion knocks attacker's ball away
+            // Heavy kinetic repulsion knocks attacker's ball away and recoils victim core
             const repelAng = Math.atan2(attacker.by - victim.y, attacker.bx - victim.x);
-            attacker.bvx = Math.cos(repelAng) * 620;
-            attacker.bvy = Math.sin(repelAng) * 620;
+            attacker.bvx = Math.cos(repelAng) * 650;
+            attacker.bvy = Math.sin(repelAng) * 650;
+            victim.vx -= Math.cos(repelAng) * 250;
+            victim.vy -= Math.sin(repelAng) * 250;
 
             if (victim === player && mode === 'playing') {
-              shake = 16;
+              shake = 18;
               addFloatingText(victim.x, victim.y - 36, 'SHIELD BROKEN! 🛡️💥', '#f87171', 22);
             } else {
               addFloatingText(victim.x, victim.y - 36, 'BLOCKED! 🛡️', '#38bdf8', 18);
@@ -1294,7 +1358,7 @@
       }
     }
 
-    // 3. Shard Collection (both core & ball can collect mass)
+    // 4. Shard Collection (both core & ball can collect mass)
     for (const e of aliveEntities) {
       for (let sIdx = shards.length - 1; sIdx >= 0; sIdx--) {
         const s = shards[sIdx];
@@ -1325,18 +1389,84 @@
     const bonus = isGiantSlayer ? 60 : 25;
     attacker.addScore(bonus);
 
+    // Epicenter of lethal duel impact
+    const epicenterX = victim.x;
+    const epicenterY = victim.y;
+
     // Ball shatter burst animation & grouped XP loot dispersion
     spawnBallBurstFX(victim.bx, victim.by, victim.ballRadius, victim.skin);
     spawnKillLoot(victim);
-    spawnSparks(victim.x, victim.y, 34, victim.skin.coreColor, '#fde047', 120, 520);
-    spawnShockwave(victim.x, victim.y, 90 + victim.ballRadius, victim.skin.trailColor);
+    spawnSparks(epicenterX, epicenterY, 40, victim.skin.coreColor, '#fde047', 140, 560);
+
+    // ═══ DUEL SHOCKWAVE IMPACT: KNOCKBACK & DISPLACEMENT ON NEARBY PLAYERS ═══
+    const blastRadius = 900 + victim.ballRadius * 2.8; // Expansive ripple zone
+    const baseImpulse = 480 + victim.ballRadius * 3.4;
+
+    for (const other of entities) {
+      if (!other.alive || other.id === victim.id) continue;
+
+      // Displacement on vehicle core
+      const dCore = dist(epicenterX, epicenterY, other.x, other.y);
+      if (dCore < blastRadius && dCore > 1) {
+        const falloff = Math.pow(1 - dCore / blastRadius, 1.25);
+        const pushAng = Math.atan2(other.y - epicenterY, other.x - epicenterX);
+        const coreImpulse = baseImpulse * falloff;
+        other.vx += Math.cos(pushAng) * coreImpulse;
+        other.vy += Math.sin(pushAng) * coreImpulse;
+      }
+
+      // Displacement on flail ball
+      const dBall = dist(epicenterX, epicenterY, other.bx, other.by);
+      if (dBall < blastRadius && dBall > 1) {
+        const ballFalloff = Math.pow(1 - dBall / blastRadius, 1.25);
+        const bPushAng = Math.atan2(other.by - epicenterY, other.bx - epicenterX);
+        const ballImpulse = (baseImpulse * 1.35) * ballFalloff;
+        other.bvx += Math.cos(bPushAng) * ballImpulse;
+        other.bvy += Math.sin(bPushAng) * ballImpulse;
+      }
+    }
+
+    // Attacker recoil kickback from landing fatal smash
+    const recoilAng = Math.atan2(attacker.x - epicenterX, attacker.y - epicenterY);
+    attacker.vx += Math.cos(recoilAng) * 220;
+    attacker.vy += Math.sin(recoilAng) * 220;
+
+    // Dual visible shockwave rings
+    spawnShockwave(epicenterX, epicenterY, blastRadius * 0.90, victim.skin.trailColor || '#f97316');
+    spawnShockwave(epicenterX, epicenterY, blastRadius * 0.50, '#ffffff');
+
+    // Radial shockwave blast particles
+    for (let i = 0; i < 28; i++) {
+      const pAng = (i / 28) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+      const pSpd = 200 + Math.random() * 440;
+      particles.push({
+        x: epicenterX,
+        y: epicenterY,
+        vx: Math.cos(pAng) * pSpd,
+        vy: Math.sin(pAng) * pSpd,
+        r: 4.5 + Math.random() * 6.5,
+        color: i % 2 === 0 ? victim.skin.trailColor : '#ffffff',
+        life: 0.36,
+        maxLife: 0.36
+      });
+    }
+
+    // Camera shake impact for anyone nearby (including observers witnessing the duel!)
+    if (mode === 'playing' && player && player.alive) {
+      const distToPlayer = dist(epicenterX, epicenterY, player.x, player.y);
+      if (distToPlayer < 1600) {
+        const playerFalloff = 1 - distToPlayer / 1600;
+        const duelShake = (isGiantSlayer ? 28 : 20) * playerFalloff;
+        shake = Math.max(shake, duelShake);
+      }
+    }
 
     const involvesMe = attacker === player || victim === player;
     pushKillFeed(attacker.name, victim.name, involvesMe);
 
     if (attacker === player && mode === 'playing') {
       hitStopTimer = 0.055;
-      shake = Math.max(shake, isGiantSlayer ? 22 : 15);
+      shake = Math.max(shake, isGiantSlayer ? 28 : 20);
       sfx.smash(isGiantSlayer || attacker.streakCount >= 2);
 
       let label = 'SMASH!';
@@ -1364,11 +1494,11 @@
       }
       addFloatingText(victim.x, victim.y - 26, label, col, isGiantSlayer ? 30 : 26);
     } else if (victim === player && mode === 'playing') {
-      shake = 24;
+      shake = 26;
       sfx.smash(true);
       const killerTitle = (attacker.isBot && attacker.iq) ? `[${attacker.iq.id}] ${attacker.name}` : attacker.name;
       onPlayerDied(killerTitle);
-    } else if (dist(victim.x, victim.y, camera.x, camera.y) < 750 && mode === 'playing') {
+    } else if (dist(victim.x, victim.y, camera.x, camera.y) < 900 && mode === 'playing') {
       sfx.smash(false);
     }
   }
